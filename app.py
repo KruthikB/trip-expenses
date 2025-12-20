@@ -20,6 +20,8 @@ CONFIG_FILE = 'trips_config.json'
 if not os.path.exists(TRIPS_FOLDER):
     os.makedirs(TRIPS_FOLDER)
 
+# --- CONFIGURATION HELPERS ---
+
 def get_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r') as f: return json.load(f)
@@ -27,6 +29,21 @@ def get_config():
 
 def save_config(config):
     with open(CONFIG_FILE, 'w') as f: json.dump(config, f)
+
+def get_groups_config():
+    config = get_config()
+    trip_id = session.get('current_trip')
+    if not trip_id: return {}
+    return config.get(trip_id, {}).get('groups', {})
+
+def save_groups_config(groups_dict):
+    config = get_config()
+    trip_id = session.get('current_trip')
+    if trip_id not in config: config[trip_id] = {}
+    config[trip_id]['groups'] = groups_dict
+    save_config(config)
+
+# --- DATA HELPERS ---
 
 def get_trip_file():
     trip_id = session.get('current_trip', 'default')
@@ -40,6 +57,7 @@ def load_data():
     return pd.read_csv(file_path)
 
 def get_settlements(balances):
+    """Calculates who pays whom based on net balances."""
     debtors = [[n, abs(b)] for n, b in balances.items() if b < 0]
     creditors = [[n, b] for n, b in balances.items() if b > 0]
     settlements = []
@@ -53,8 +71,11 @@ def get_settlements(balances):
         if c[1] < 0.01: creditors.pop(0)
     return settlements
 
+# --- ROUTES ---
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    # 1. Start or Load Trip
     if request.method == 'POST' and 'start_trip' in request.form:
         trip_name = request.form.get('trip_name').replace(" ", "_")
         pwd = request.form.get('password')
@@ -67,25 +88,28 @@ def index():
         session.clear()
         session['current_trip'] = trip_name
         if trip_name not in config:
-            config[trip_name] = {'password': pwd if pwd else None, 'locked': False}
+            config[trip_name] = {'password': pwd if pwd else None, 'locked': False, 'groups': {}}
             save_config(config)
+            
         session['participants'] = [n.strip() for n in request.form.get('names', '').split(',') if n.strip()]
         return redirect(url_for('index'))
 
+    # 2. Redirect to setup if no trip active
     trip_id = session.get('current_trip')
     if not trip_id:
         files = [f for f in os.listdir(TRIPS_FOLDER) if f.startswith('expense_') and f.endswith('.csv')]
         existing_trips = [f.replace('expense_', '').replace('.csv', '') for f in files]
         return render_template('setup.html', existing_trips=existing_trips, config=get_config())
 
+    # 3. Process Trip Data
     participants, df = session.get('participants', []), load_data()
-    # Reconstruct participants if loading an existing trip
     if not participants and not df.empty:
         participants = [col for col in df.columns if not col.endswith('_Eligible') and col not in ['id', 'Date', 'Description', 'Payer', 'Total Amount']]
         session['participants'] = participants
 
-    totals, balances = {}, {name: 0.0 for name in participants}
-    active_spenders = {} # Dictionary to store only those with activity
+    totals = {}
+    balances = {name: 0.0 for name in participants}
+    active_spenders = {} 
 
     if not df.empty:
         totals['Total Amount'] = df['Total Amount'].sum()
@@ -94,12 +118,44 @@ def index():
             totals[name] = col_sum
             paid_sum = df[df['Payer'] == name]['Total Amount'].sum()
             balances[name] = round(paid_sum - col_sum, 2)
-            
-            # Identify active spenders: Anyone who paid money OR has a share > 0
             if paid_sum > 0 or col_sum > 0:
                 active_spenders[name] = balances[name]
 
     settlements = get_settlements(balances)
+
+    # 4. Multi-Group Logic (Proportional Split)
+    groups = get_groups_config()
+    
+    # Count memberships per participant for dividing debt
+    membership_counts = {}
+    for members in groups.values():
+        for m in members:
+            membership_counts[m] = membership_counts.get(m, 0) + 1
+
+    group_stats = {}
+    for group_name, members in groups.items():
+        g_spent, g_bal = 0, 0
+        member_breakdown = []
+        for m in members:
+            divisor = membership_counts.get(m, 1)
+            eff_spent = totals.get(m, 0) / divisor
+            eff_bal = balances.get(m, 0) / divisor
+            g_spent += eff_spent
+            g_bal += eff_bal
+            member_breakdown.append({'name': m, 'effective_bal': round(eff_bal, 2), 'divisor': divisor})
+        
+        group_stats[group_name] = {
+            'total_spent': round(g_spent, 2),
+            'net_balance': round(g_bal, 2),
+            'members': member_breakdown
+        }
+
+    group_balances_only = {gn: stats['net_balance'] for gn, stats in group_stats.items()}
+    group_settlements = get_settlements(group_balances_only)
+    
+    # Flatten list of all grouped members for UI logic
+    all_grouped_members = [m for sublist in groups.values() for m in sublist]
+
     wa_text = urllib.parse.quote(f"*Trip: {trip_id.replace('_', ' ')}*\n" + "\n".join(settlements))
     
     return render_template('index.html', 
@@ -107,16 +163,23 @@ def index():
                            participants=participants, 
                            expenses=df.to_dict(orient='records'), 
                            balances=balances, 
-                           active_spenders=active_spenders, # Pass this new dict
+                           active_spenders=active_spenders,
                            totals=totals, 
                            settlements=settlements,
+                           group_stats=group_stats,
+                           group_settlements=group_settlements,
+                           grouped_members=all_grouped_members,
                            wa_url=f"https://wa.me/?text={wa_text}",
                            locked=get_config().get(trip_id, {}).get('locked', False))
 
-@app.route('/load_trip/<name>')
-def load_trip(name):
-    session.clear()
-    session['current_trip'] = name
+@app.route('/manage_groups', methods=['POST'])
+def manage_groups():
+    group_name = request.form.get('group_name')
+    members = request.form.getlist('group_members')
+    current_groups = get_groups_config()
+    if group_name and members:
+        current_groups[group_name] = members
+        save_groups_config(current_groups)
     return redirect(url_for('index'))
 
 @app.route('/save', methods=['POST'])
@@ -129,10 +192,12 @@ def save_expense():
     for n in session.get('participants', []):
         is_el = n in selected_p
         data[n], data[f"{n}_Eligible"] = (share if is_el else 0.0), ("Yes" if is_el else "No")
+    
     if exp_id and exp_id in df['id'].values:
         for k, v in data.items(): df.loc[df['id'] == exp_id, k] = v
     else:
         df = pd.concat([df, pd.DataFrame([data])], ignore_index=True)
+    
     df.fillna(0).to_csv(get_trip_file(), index=False)
     return redirect(url_for('index'))
 
@@ -150,7 +215,6 @@ def download(type):
         output.seek(0)
         return send_file(output, as_attachment=True, download_name=f"{session['current_trip']}.xlsx")
     else:
-        # Dynamic Orientation PDF
         col_count = 4 + (len(participants) * 2)
         page_size = landscape(letter) if col_count > 6 else portrait(letter)
         doc = SimpleDocTemplate(output, pagesize=page_size, margin=0.3*inch)
@@ -159,10 +223,14 @@ def download(type):
         data = [pdf_df.columns.values.tolist()] + pdf_df.values.tolist()
         t = Table(data, repeatRows=1)
         t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.blue), ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTSIZE', (0,0), (-1,-1), 7 if col_count > 10 else 9)]))
-        elements.append(t)
-        doc.build(elements)
-        output.seek(0)
+        elements.append(t); doc.build(elements); output.seek(0)
         return send_file(output, as_attachment=True, download_name=f"{session['current_trip']}.pdf")
+
+@app.route('/load_trip/<name>')
+def load_trip(name):
+    session.clear()
+    session['current_trip'] = name
+    return redirect(url_for('index'))
 
 @app.route('/delete_exp/<id>')
 def delete_exp(id):
@@ -179,6 +247,13 @@ def delete_trip(name):
 @app.route('/new_trip')
 def new_trip():
     session.clear()
+    return redirect(url_for('index'))
+@app.route('/delete_group/<group_name>')
+def delete_group(group_name):
+    current_groups = get_groups_config()
+    if group_name in current_groups:
+        del current_groups[group_name]
+        save_groups_config(current_groups)
     return redirect(url_for('index'))
 
 if __name__ == '__main__':

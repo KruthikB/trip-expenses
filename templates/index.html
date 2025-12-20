@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{{ trip_name }}</title>
     <style>
-        :root { --primary: #2563eb; --edit: #f59e0b; --delete: #ef4444; --excel: #16a34a; --bg: #f8fafc; }
+        :root { --primary: #2563eb; --edit: #f59e0b; --delete: #ef4444; --excel: #16a34a; --bg: #f8fafc; --group-bg: #f0f7ff; }
         
         html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; background: var(--bg); font-family: system-ui, sans-serif; }
         
@@ -14,12 +14,13 @@
         .grid { display: grid; grid-template-columns: 100%; gap: 15px; }
         @media (min-width: 992px) { .grid { grid-template-columns: 1fr 400px; } }
 
-        .card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; box-sizing: border-box; width: 100%; position: relative; }
+        .card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; box-sizing: border-box; width: 100%; position: relative; margin-bottom: 15px; }
         .editing-mode { border: 2px solid var(--edit); background: #fffcf0; }
 
         input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         
-        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; transition: opacity 0.2s; }
+        .btn-main:active { opacity: 0.8; }
         
         .btn-act { padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: bold; border: none; cursor: pointer; color: white; }
 
@@ -30,6 +31,12 @@
         
         .badge-yes { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
         .badge-no { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+
+        /* Group Specific Styles */
+        .group-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+        .group-card { border: 1px solid #dbeafe; border-radius: 10px; overflow: hidden; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .group-header { background: var(--group-bg); padding: 12px; border-bottom: 1px solid #dbeafe; display: flex; justify-content: space-between; align-items: center; }
+        .member-row { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
         
         html { scroll-behavior: smooth; }
     </style>
@@ -37,7 +44,10 @@
 <body>
 <div class="container">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-        <div><h1 style="margin:0; font-size: 1.3rem;">📍 {{ trip_name }}</h1><a href="/new_trip" style="color:var(--primary); font-size:12px; text-decoration:none; font-weight:bold;">← HOME</a></div>
+        <div>
+            <h1 style="margin:0; font-size: 1.3rem;">📍 {{ trip_name }}</h1>
+            <a href="/new_trip" style="color:var(--primary); font-size:12px; text-decoration:none; font-weight:bold;">← HOME</a>
+        </div>
         <div style="display: flex; gap: 5px;">
             <a href="/download/pdf" class="btn-act" style="background: var(--delete);">PDF</a>
             <a href="/download/excel" class="btn-act" style="background: var(--excel);">EXCEL</a>
@@ -45,55 +55,132 @@
     </div>
 
     <div class="grid">
-        <div class="card" id="input-area">
-            <h3 id="form-title" style="margin:0 0 10px 0;">Add Expense</h3>
-            <form action="/save" method="POST" id="exp-form">
-                <input type="hidden" name="id" id="edit-id">
-                <div style="display:flex; gap:10px;"><input type="date" name="date" id="edit-date" required><input type="number" step="0.01" name="amount" id="edit-amount" placeholder="₹ Amount" required></div>
-                <input type="text" name="description" id="edit-desc" placeholder="What for?" required>
-                <select name="payer">{% for n in participants %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f8fafc; padding:10px; border-radius:8px;">
-                    {% for n in participants %}<label><input type="checkbox" name="split_between" value="{{ n }}" checked> {{ n }}</label>{% endfor %}
+        <div class="main-content">
+            <div class="card" id="input-area">
+                <h3 id="form-title" style="margin:0 0 10px 0;">Add Expense</h3>
+                <form action="/save" method="POST" id="exp-form">
+                    <input type="hidden" name="id" id="edit-id">
+                    <div style="display:flex; gap:10px;">
+                        <input type="date" name="date" id="edit-date" required>
+                        <input type="number" step="0.01" name="amount" id="edit-amount" placeholder="₹ Amount" required>
+                    </div>
+                    <input type="text" name="description" id="edit-desc" placeholder="What for?" required>
+                    <select name="payer">
+                        {% for n in participants %}
+                        <option value="{{ n }}">{{ n }}</option>
+                        {% endfor %}
+                    </select>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f8fafc; padding:10px; border-radius:8px;">
+                        {% for n in participants %}
+                        <label style="font-size: 14px; cursor: pointer;">
+                            <input type="checkbox" name="split_between" value="{{ n }}" checked> {{ n }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn-main" id="sub-btn" style="margin-top:10px;">SAVE EXPENSE</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3 style="margin:0;">👨‍👩‍👧‍👦 Family Groups</h3>
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 15px;">Tracking proportional expenses for each family unit.</p>
+
+                {% if group_settlements %}
+                <div title="The suggested payments required to balance the accounts between different family units." 
+                     style="background: #fff7ed; padding: 12px; border-radius: 8px; border: 1px solid #ffedd5; margin-bottom: 15px; cursor: help;">
+                    <h4 style="margin: 0 0 5px 0; color: #9a3412; font-size: 0.9rem;">Inter-Group Settlements</h4>
+                    {% for gs in group_settlements %}
+                        <div style="font-size: 0.85rem; font-weight: bold; color: #c2410c;">• {{ gs }}</div>
+                    {% endfor %}
                 </div>
-                <button type="submit" class="btn-main" id="sub-btn" style="margin-top:10px;">SAVE</button>
-            </form>
+                {% endif %}
+                
+                <div class="group-container">
+                    {% for g_name, g_data in group_stats.items() %}
+                    <div class="group-card">
+                        <div class="group-header">
+                            <span style="font-weight: bold; color: var(--primary);">{{ g_name }}</span>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn-act" style="background: var(--edit); padding: 4px 8px;" 
+                                        onclick="editGroup('{{ g_name }}')">Edit</button>
+                                <a href="/delete_group/{{ g_name }}" class="btn-act" 
+                                style="background: var(--delete); padding: 4px 8px;" 
+                                onclick="return confirm('Delete this group?')">Delete</a>
+                            </div>
+                        </div>
+                        
+                        <div class="group-body">
+                            {% for m in g_data.members %}
+                            <div class="member-row" title="This is this person's share within this family group. If they are in multiple groups, their total debt is divided by the number of groups.">
+                                <span>{{ m.name }} {% if m.divisor > 1 %}<small>(1/{{m.divisor}} share)</small>{% endif %}</span>
+                                <span style="font-weight: bold; color: {{ '#16a34a' if m.effective_bal >= 0 else '#dc2626' }}">
+                                    ₹{{ m.effective_bal }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div title="The combined net balance of this entire family unit. If positive, the group is owed money; if negative, the group owes others." 
+                            style="padding: 10px; background: #fafafa; text-align: right; font-size: 0.8rem; border-top: 1px dashed #dbeafe; cursor: help;">
+                            Group Net: <b>₹{{ g_data.net_balance }}</b>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <details id="group-form-details" style="margin-top: 15px;">
+                    <summary style="cursor: pointer; color: var(--primary); font-weight: bold;">+ Create / Update Group</summary>
+                    <form action="/manage_groups" method="POST" style="margin-top: 10px; padding: 15px; background: #f8fafc; border-radius: 8px;">
+                        <input type="text" name="group_name" id="group_name_input" placeholder="Group Name" required>
+                        <p style="font-size: 0.8rem; margin-bottom: 5px;">Select/Deselect Members:</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                            {% for p in participants %}
+                            <label style="font-size: 0.85rem;"><input type="checkbox" name="group_members" value="{{ p }}"> {{ p }}</label>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn-main" style="background: #334155;">Save Group Configuration</button>
+                    </form>
+                </details>
+            </div>
         </div>
 
         <div class="sidebar">
-    
-    <div style="background: linear-gradient(135deg, #2563eb, #1e40af); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);">
-        <h4 style="margin: 0; font-size: 0.9rem; text-transform: uppercase; opacity: 0.9;">Total Trip Expenses</h4>
-        <h1 style="margin: 5px 0 0 0; font-size: 2.5rem;">₹{{ "{:,.2f}".format(totals['Total Amount']|default(0)) }}</h1>
-    </div>
+            <div title="This is the total expenditure of all participants combined for this entire trip."
+            style="background: linear-gradient(135deg, #2563eb, #1e40af); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); cursor: help;">
+                <h4 style="margin: 0; font-size: 0.9rem; text-transform: uppercase; opacity: 0.9;">Total Trip Expenses</h4>
+                <h1 style="margin: 5px 0 0 0; font-size: 2.5rem;">₹{{ "{:,.2f}".format(totals['Total Amount']|default(0)) }}</h1>
+            </div>
 
-    <div class="card" style="border-left: 5px solid #2563eb; margin-bottom: 20px;">
-        <h3 style="margin-top: 0;">🤝 Settlements</h3>
-        {% for s in settlements %}
-            <div style="padding: 8px; background: #f0f7ff; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem;">{{ s }}</div>
-        {% else %}
-            <p>No settlements needed. 🎉</p>
-        {% endfor %}
-    </div>
+            <div class="card" title="Suggested payments to clear all debts. Positive balance members receive money; negative balance members pay back." style="border-left: 5px solid #2563eb; margin-bottom: 20px; cursor: help;">
+                <h3 style="margin-top: 0;">🤝 Settlements</h3>
+                {% for s in settlements %}
+                    <div style="padding: 10px; background: #f0f7ff; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; border: 1px solid #dbeafe;">
+                        <strong>{{ s.split(' pays ')[0] }}</strong> ➔ {{ s.split(' pays ')[1] }}
+                    </div>
+                {% else %}
+                    <p style="font-size: 0.9rem; color: #64748b;">No individual debts! 🎉</p>
+                {% endfor %}
+                <a href="{{ wa_url }}" target="_blank" style="background:#25d366; color:white; text-decoration:none; padding:12px; border-radius:8px; display:block; text-align:center; font-weight:bold; font-size:0.9rem; margin-top:10px;">WhatsApp Summary</a>
+            </div>
 
-    <div class="card">
-        <h3 style="margin-top: 0;">📊 Active Spenders</h3>
-        <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Only showing members involved in expenses.</p>
-        
-        {% for name, bal in active_spenders.items() %}
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-            <span style="font-weight: 500;">{{ name }}</span>
-            <span style="font-weight: bold; color: {{ '#16a34a' if bal >= 0 else '#dc2626' }};">
-                {% if bal >= 0 %} Owed: ₹{{ bal }} {% else %} Owes: ₹{{ bal|abs }} {% endif %}
-            </span>
+            <div class="card" title="Net balance for each person. 'Owed' means they spent more than their share. 'Owes' means they need to pay back.">
+                <h3 style="margin-top: 0;">📊 Active Spenders</h3>
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Individual net activity for this trip.</p>
+                
+                {% for name, bal in active_spenders.items() %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                    <span style="font-weight: 500;">{{ name }}</span>
+                    <span style="font-weight: bold; color: {{ '#16a34a' if bal >= 0 else '#dc2626' }}; font-size: 0.9rem;">
+                        {% if bal >= 0 %} Owed: ₹{{ "{:,.2f}".format(bal) }} {% else %} Owes: ₹{{ "{:,.2f}".format(bal|abs) }} {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-        {% endfor %}
-    </div>
-    
-</div>
     </div>
 
     <div class="card" style="margin-top:20px;">
-        <h3>Ledger</h3>
+        <h3 style="margin: 0 0 15px 0;">Transaction Ledger</h3>
         <div class="table-wrapper">
             <table>
                 <thead>
@@ -103,7 +190,10 @@
                     {% for e in expenses %}
                     <tr>
                         <td>{{ e.Date }}</td><td>{{ e.Description }}</td><td>{{ e.Payer }}</td><td>₹{{ e['Total Amount'] }}</td>
-                        {% for n in participants %}<td>₹{{ e[n] }}</td><td><span class="{{ 'badge-yes' if e[n+'_Eligible'] == 'Yes' else 'badge-no' }}">{{ e[n+'_Eligible'] }}</span></td>{% endfor %}
+                        {% for n in participants %}
+                        <td>₹{{ e[n] }}</td>
+                        <td><span class="{{ 'badge-yes' if e[n+'_Eligible'] == 'Yes' else 'badge-no' }}">{{ e[n+'_Eligible'] }}</span></td>
+                        {% endfor %}
                         <td>
                             <div style="display:flex; gap:5px;">
                                 <button class="btn-act" style="background: var(--edit);" onclick="editExpense('{{ e.id }}','{{ e.Date }}','{{ e.Description }}','{{ e.Payer }}','{{ e['Total Amount'] }}')">Edit</button>
@@ -121,6 +211,7 @@
         </div>
     </div>
 </div>
+
 <script>
     function editExpense(id, date, desc, payer, amt) {
         document.getElementById('edit-id').value = id;
@@ -131,6 +222,16 @@
         area.classList.add('editing-mode');
         document.getElementById('form-title').innerText = "📝 EDIT MODE";
         area.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function editGroup(name) {
+        document.getElementById('group_name_input').value = name;
+        document.getElementById('group-form-details').open = true;
+        document.getElementById('group_name_input').focus();
+        
+        // Reset all checkboxes before letting the user re-select
+        const checks = document.querySelectorAll('input[name="group_members"]');
+        checks.forEach(c => c.checked = false);
     }
 </script>
 </body>
