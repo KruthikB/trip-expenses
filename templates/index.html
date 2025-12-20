@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ trip_name }}</title>
+    <style>
+        :root { --primary: #2563eb; --edit: #f59e0b; --delete: #ef4444; --excel: #16a34a; --bg: #f8fafc; }
+        
+        html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; background: var(--bg); font-family: system-ui, sans-serif; }
+        
+        .container { width: 100%; max-width: 100vw; box-sizing: border-box; padding: 15px; }
+        
+        .grid { display: grid; grid-template-columns: 100%; gap: 15px; }
+        @media (min-width: 992px) { .grid { grid-template-columns: 1fr 400px; } }
+
+        .card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; box-sizing: border-box; width: 100%; position: relative; }
+        .editing-mode { border: 2px solid var(--edit); background: #fffcf0; }
+
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        
+        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
+        
+        .btn-act { padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: bold; border: none; cursor: pointer; color: white; }
+
+        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0; }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 800px; font-size: 13px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        
+        .badge-yes { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .badge-no { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+        <div><h1 style="margin:0; font-size: 1.3rem;">📍 {{ trip_name }}</h1><a href="/new_trip" style="color:var(--primary); font-size:12px; text-decoration:none; font-weight:bold;">← HOME</a></div>
+        <div style="display: flex; gap: 5px;">
+            <a href="/download/pdf" class="btn-act" style="background: var(--delete);">PDF</a>
+            <a href="/download/excel" class="btn-act" style="background: var(--excel);">EXCEL</a>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card" id="input-area">
+            <h3 id="form-title" style="margin:0 0 10px 0;">Add Expense</h3>
+            <form action="/save" method="POST" id="exp-form">
+                <input type="hidden" name="id" id="edit-id">
+                <div style="display:flex; gap:10px;"><input type="date" name="date" id="edit-date" required><input type="number" step="0.01" name="amount" id="edit-amount" placeholder="₹ Amount" required></div>
+                <input type="text" name="description" id="edit-desc" placeholder="What for?" required>
+                <select name="payer">{% for n in participants %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f8fafc; padding:10px; border-radius:8px;">
+                    {% for n in participants %}<label><input type="checkbox" name="split_between" value="{{ n }}" checked> {{ n }}</label>{% endfor %}
+                </div>
+                <button type="submit" class="btn-main" id="sub-btn" style="margin-top:10px;">SAVE</button>
+            </form>
+        </div>
+
+        <div class="sidebar">
+            <div class="card" style="border-left: 5px solid var(--primary); background: #f0f7ff; margin-bottom: 15px;">
+                <h3 style="margin:0 0 10px 0; color: #1e40af;">🤝 Settlements</h3>
+                {% for s in settlements %}
+                <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px; border-radius: 8px; margin-bottom: 5px; border: 1px solid #e2e8f0; font-size: 12px;">
+                    <span style="font-weight: bold;">{{ s.split(' pays ')[0] }}</span>
+                    <div style="color: var(--primary); font-weight: bold; text-align: center;"><span style="display: block; font-size: 10px;">{{ s.split(': ')[1] }}</span>➔</div>
+                    <span style="font-weight: bold;">{{ s.split(' pays ')[1].split(': ')[0] }}</span>
+                </div>
+                {% endfor %}
+                <a href="{{ wa_url }}" target="_blank" style="background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:8px; display:block; text-align:center; font-weight:bold; font-size:14px; margin-top:10px;">WhatsApp Summary</a>
+            </div>
+            <div class="card">
+                <h3>📊 Balances</h3>
+                {% for name, bal in balances.items() %}
+                <div style="display:flex; justify-content:space-between; margin-bottom: 5px; font-size: 14px;">
+                    <span>{{ name }}</span><span style="font-weight:bold; color: {{ '#16a34a' if bal >= 0 else '#dc2626' }}">₹{{ bal }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+        <h3>Ledger</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Date</th><th>Item</th><th>Payer</th><th>Total</th>{% for n in participants %}<th>{{ n }} ₹</th><th>Eligible</th>{% endfor %}<th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for e in expenses %}
+                    <tr>
+                        <td>{{ e.Date }}</td><td>{{ e.Description }}</td><td>{{ e.Payer }}</td><td>₹{{ e['Total Amount'] }}</td>
+                        {% for n in participants %}<td>₹{{ e[n] }}</td><td><span class="{{ 'badge-yes' if e[n+'_Eligible'] == 'Yes' else 'badge-no' }}">{{ e[n+'_Eligible'] }}</span></td>{% endfor %}
+                        <td>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-act" style="background: var(--edit);" onclick="editExpense('{{ e.id }}','{{ e.Date }}','{{ e.Description }}','{{ e.Payer }}','{{ e['Total Amount'] }}')">Edit</button>
+                                <a href="/delete_exp/{{ e.id }}" class="btn-act" style="background: var(--delete);" onclick="return confirm('Delete?')">Del</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tr style="background:#f1f5f9; font-weight:bold;">
+                    <td colspan="3" style="text-align:right;">TOTALS:</td><td>₹{{ totals['Total Amount']|default(0) }}</td>
+                    {% for n in participants %}<td>₹{{ totals[n]|default(0) }}</td><td>-</td>{% endfor %}<td></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    function editExpense(id, date, desc, payer, amt) {
+        document.getElementById('edit-id').value = id;
+        document.getElementById('edit-date').value = date;
+        document.getElementById('edit-desc').value = desc;
+        document.getElementById('edit-amount').value = amt;
+        const area = document.getElementById('input-area');
+        area.classList.add('editing-mode');
+        document.getElementById('form-title').innerText = "📝 EDIT MODE";
+        area.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+id,Date,Description,Payer,Total Amount,Vijay,Vijay_Eligible,Kiran,Kiran_Eligible,Kruthik,Kruthik_Eligible,Shreyas,Shreyas_Eligible,Karthik,Karthik_Eligible,Preethi,Preethi_Eligible,Anuradha,Anuradha_Eligible,Dayanand,Dayanand_Eligible,Divya,Divya_Eligible,Santhoshi,Santhoshi_Eligible,Veena,Veena_Eligible,Shakunthala,Shakunthala_Eligible,Paripoorna,Paripoorna_Eligible
+247ce9f1,12/13/2025,Advance for hotel in Vizag,Vijay,5000,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes
+d2826f40,2025-12-13,Advance for Vehicle Urbania,Vijay,5000,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes
+6ce4c2e4,2025-12-13,Cab 1 for Railway Station ,Kruthik,400,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes,30.77,Yes
+61805fa8,2025-12-13,Cab 2 for railway station ,Kruthik,270,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes
+eef6b1ec,2025-12-13,cab 3 for railway station,Shreyas,270,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes,20.77,Yes
+97bce2ef,2025-12-13,Cup Noodles in train,Shreyas,120,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes,9.23,Yes
+843f68de,2025-12-14,Cab 1 from Railway Station to Hotel Vizag,Kiran,279,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes,21.46,Yes
+ee73d68d,2025-12-14,Cab 2 from Railway Station to Hotel Vizag,Kruthik,300,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes
+1050507f,2025-12-14,Cab 3 from Railway Station to Hotel Vizag,Kruthik,310,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes
+8b4dc2f7,2025-12-14,Breakfast at Vaikunta Maharuchulu,Kiran,2440,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes,187.69,Yes
+f4aa22b8,2025-12-14,Simhachalam Darshanam Tickets,Kiran,3900,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes,300.0,Yes
+5982f6b1,2025-12-14,Lunch on 14th,Kiran,4675,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes,359.62,Yes
+1a9d214e,2025-12-14,Advance for Hotel in Puri,Vijay,15000,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes,1153.85,Yes
+e4560f4f,2025-12-14,Car Driver amount,Vijay,7200,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes,553.85,Yes
+55580522,2025-12-14,Dinner,Vijay,1100,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes,84.62,Yes
+df46b9b0,2025-12-15,Breakfast,Karthik,1675,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes,128.85,Yes
+09330fd5,2025-12-15,Coffee and Juice 230+80,Kiran,310,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes,23.85,Yes
+7861f975,2025-12-15,Parking Fee,Kiran,100,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes,7.69,Yes
+13ec539e,2025-12-15,Lunch,Kiran,2680,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes,206.15,Yes
+ec649f21,2025-12-15,Urbania Amount,Kiran,20000,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes,1538.46,Yes
+cac77c33,2025-12-15,Coffee,Vijay,85,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes,6.54,Yes
+853d22d4,2025-12-15,Dinner in Hotel Sapphire Puri,Kiran,2465,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes,189.62,Yes
+5bfb73ef,2025-12-16,Lunch in Hotel Sapphire Puri,Kiran,3161,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes,243.15,Yes
+32e64f66,2025-12-16,Autos from temple and Car parking fees,Kruthik,300,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes,23.08,Yes
+04c7d3f9,2025-12-16,Konark Sun Temple Light and Sound Show,Kruthik,550,50.0,Yes,50.0,Yes,50.0,Yes,50.0,Yes,50.0,Yes,0.0,No,50.0,Yes,0.0,No,50.0,Yes,50.0,Yes,50.0,Yes,50.0,Yes,50.0,Yes
+e9c65028,2025-12-16,Dinner,Vijay,2870,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes,220.77,Yes
+09ecb67f,2025-12-17,Advance for Hotek in Vizag ( Hotel Raga),Vijay,5000,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes,384.62,Yes
+526e2aea,2025-12-17,Amount paid to Hotel in Puri,Vijay,20500,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes,1576.92,Yes
+cd0d40b8,2025-12-17,Lunch,Kiran,4030,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes,310.0,Yes
+3c6cfbbc,2025-12-17,Driver Lunch,Karthik,180,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes,13.85,Yes
+4dbe1b95,2025-12-17,Dinner,Vijay,3600,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes,276.92,Yes
+ec447bd6,2025-12-18,Dinner at Hotel Treebo,Karthik,4278,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes,329.08,Yes
+56f08866,2025-12-19,Driver amount,Vijay,38000,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes,2923.08,Yes
+e8b63c6e,2025-12-19,Hotel Treebo,Vijay,14400,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes,1107.69,Yes
+5520539b,2025-12-19,Cab to railway station in Vizag,Kiran,350,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes,26.92,Yes
+264cbed1,2025-12-19,Cab 2 to railway station in Vizag,Kruthik,307,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes,23.62,Yes
+5bc542d1,2025-12-19,Auto to Kanaka Mahalakshmi temple,Vijay,200,50.0,Yes,0.0,No,0.0,No,0.0,No,0.0,No,0.0,No,50.0,Yes,0.0,No,0.0,No,50.0,Yes,50.0,Yes,0.0,No,0.0,No
+4e2e225d,2025-12-19,Cab from kanaka Mahalakshmi Temple,Vijay,211,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes,16.23,Yes
+883a0812,2025-12-19,Lunch ,Kruthik,1962,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes,150.92,Yes
+582b6a60,2025-12-19,Dinner in Train,Vijay,1760,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes,135.38,Yes
+9c18d723,2025-12-19,Total Train Tickets amount,Vijay,36140,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes,2780.0,Yes
