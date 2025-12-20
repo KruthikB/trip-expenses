@@ -85,6 +85,8 @@ def index():
         session['participants'] = participants
 
     totals, balances = {}, {name: 0.0 for name in participants}
+    active_spenders = {} # Dictionary to store only those with activity
+
     if not df.empty:
         totals['Total Amount'] = df['Total Amount'].sum()
         for name in participants:
@@ -92,13 +94,22 @@ def index():
             totals[name] = col_sum
             paid_sum = df[df['Payer'] == name]['Total Amount'].sum()
             balances[name] = round(paid_sum - col_sum, 2)
+            
+            # Identify active spenders: Anyone who paid money OR has a share > 0
+            if paid_sum > 0 or col_sum > 0:
+                active_spenders[name] = balances[name]
 
     settlements = get_settlements(balances)
     wa_text = urllib.parse.quote(f"*Trip: {trip_id.replace('_', ' ')}*\n" + "\n".join(settlements))
     
-    return render_template('index.html', trip_name=trip_id.replace("_", " "), 
-                           participants=participants, expenses=df.to_dict(orient='records'), 
-                           balances=balances, totals=totals, settlements=settlements,
+    return render_template('index.html', 
+                           trip_name=trip_id.replace("_", " "), 
+                           participants=participants, 
+                           expenses=df.to_dict(orient='records'), 
+                           balances=balances, 
+                           active_spenders=active_spenders, # Pass this new dict
+                           totals=totals, 
+                           settlements=settlements,
                            wa_url=f"https://wa.me/?text={wa_text}",
                            locked=get_config().get(trip_id, {}).get('locked', False))
 
@@ -171,4 +182,4 @@ def new_trip():
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+    app.run()

@@ -60,26 +60,36 @@
         </div>
 
         <div class="sidebar">
-            <div class="card" style="border-left: 5px solid var(--primary); background: #f0f7ff; margin-bottom: 15px;">
-                <h3 style="margin:0 0 10px 0; color: #1e40af;">🤝 Settlements</h3>
-                {% for s in settlements %}
-                <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px; border-radius: 8px; margin-bottom: 5px; border: 1px solid #e2e8f0; font-size: 12px;">
-                    <span style="font-weight: bold;">{{ s.split(' pays ')[0] }}</span>
-                    <div style="color: var(--primary); font-weight: bold; text-align: center;"><span style="display: block; font-size: 10px;">{{ s.split(': ')[1] }}</span>➔</div>
-                    <span style="font-weight: bold;">{{ s.split(' pays ')[1].split(': ')[0] }}</span>
-                </div>
-                {% endfor %}
-                <a href="{{ wa_url }}" target="_blank" style="background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:8px; display:block; text-align:center; font-weight:bold; font-size:14px; margin-top:10px;">WhatsApp Summary</a>
-            </div>
-            <div class="card">
-                <h3>📊 Balances</h3>
-                {% for name, bal in balances.items() %}
-                <div style="display:flex; justify-content:space-between; margin-bottom: 5px; font-size: 14px;">
-                    <span>{{ name }}</span><span style="font-weight:bold; color: {{ '#16a34a' if bal >= 0 else '#dc2626' }}">₹{{ bal }}</span>
-                </div>
-                {% endfor %}
-            </div>
+    
+    <div style="background: linear-gradient(135deg, #2563eb, #1e40af); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);">
+        <h4 style="margin: 0; font-size: 0.9rem; text-transform: uppercase; opacity: 0.9;">Total Trip Expenses</h4>
+        <h1 style="margin: 5px 0 0 0; font-size: 2.5rem;">₹{{ "{:,.2f}".format(totals['Total Amount']|default(0)) }}</h1>
+    </div>
+
+    <div class="card" style="border-left: 5px solid #2563eb; margin-bottom: 20px;">
+        <h3 style="margin-top: 0;">🤝 Settlements</h3>
+        {% for s in settlements %}
+            <div style="padding: 8px; background: #f0f7ff; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem;">{{ s }}</div>
+        {% else %}
+            <p>No settlements needed. 🎉</p>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top: 0;">📊 Active Spenders</h3>
+        <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Only showing members involved in expenses.</p>
+        
+        {% for name, bal in active_spenders.items() %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+            <span style="font-weight: 500;">{{ name }}</span>
+            <span style="font-weight: bold; color: {{ '#16a34a' if bal >= 0 else '#dc2626' }};">
+                {% if bal >= 0 %} Owed: ₹{{ bal }} {% else %} Owes: ₹{{ bal|abs }} {% endif %}
+            </span>
         </div>
+        {% endfor %}
+    </div>
+    
+</div>
     </div>
 
     <div class="card" style="margin-top:20px;">
