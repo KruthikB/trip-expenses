@@ -109,15 +109,23 @@ def index():
 
     totals = {}
     balances = {name: 0.0 for name in participants}
+    gross_spending = {name: 0.0 for name in participants} # Track raw cash paid
     active_spenders = {} 
 
     if not df.empty:
         totals['Total Amount'] = df['Total Amount'].sum()
         for name in participants:
+            # Individual Share (what they were supposed to pay)
             col_sum = df[name].sum() if name in df.columns else 0.0
             totals[name] = col_sum
+            
+            # Gross Spending (actual cash paid out of pocket)
             paid_sum = df[df['Payer'] == name]['Total Amount'].sum()
+            gross_spending[name] = round(paid_sum, 2)
+            
+            # Net Balance (Paid - Share)
             balances[name] = round(paid_sum - col_sum, 2)
+            
             if paid_sum > 0 or col_sum > 0:
                 active_spenders[name] = balances[name]
 
@@ -134,18 +142,33 @@ def index():
 
     group_stats = {}
     for group_name, members in groups.items():
-        g_spent, g_bal = 0, 0
+        g_spent, g_bal, g_gross_cash = 0, 0, 0 # Added g_gross_cash
         member_breakdown = []
+
         for m in members:
             divisor = membership_counts.get(m, 1)
+            
+            # Shares (Supposed to pay)
             eff_spent = totals.get(m, 0) / divisor
+            # Balance (Paid - Shares)
             eff_bal = balances.get(m, 0) / divisor
+            # Actual Cash Paid (Proportional Gross)
+            eff_gross = gross_spending.get(m, 0) / divisor
+            
             g_spent += eff_spent
             g_bal += eff_bal
-            member_breakdown.append({'name': m, 'effective_bal': round(eff_bal, 2), 'divisor': divisor})
-        
+            g_gross_cash += eff_gross
+            
+            member_breakdown.append({
+                'name': m, 
+                'effective_bal': round(eff_bal, 2), 
+                'effective_gross': round(eff_gross, 2), # Pass gross per member
+                'divisor': divisor
+            })
+
         group_stats[group_name] = {
-            'total_spent': round(g_spent, 2),
+            'total_allocated_share': round(g_spent, 2),
+            'total_gross_paid': round(g_gross_cash, 2), # The total cash the group paid
             'net_balance': round(g_bal, 2),
             'members': member_breakdown
         }
@@ -163,6 +186,7 @@ def index():
                            participants=participants, 
                            expenses=df.to_dict(orient='records'), 
                            balances=balances, 
+                           gross_spending=gross_spending, # New variable passed to HTML
                            active_spenders=active_spenders,
                            totals=totals, 
                            settlements=settlements,
@@ -204,26 +228,71 @@ def save_expense():
 @app.route('/download/<type>')
 def download(type):
     participants, df = session.get('participants', []), load_data()
+    
+    # 1. Prepare Data
     summary = {col: '' for col in df.columns}
     summary['Description'], summary['Total Amount'] = 'TOTALS', df['Total Amount'].sum()
     for p in participants:
         summary[p], summary[f"{p}_Eligible"] = df[p].sum(), "-"
+    
     df_final = pd.concat([df, pd.DataFrame([summary])], ignore_index=True)
     output = BytesIO()
+
     if type == 'excel':
         df_final.to_excel(output, index=False)
         output.seek(0)
         return send_file(output, as_attachment=True, download_name=f"{session['current_trip']}.xlsx")
+    
     else:
-        col_count = 4 + (len(participants) * 2)
-        page_size = landscape(letter) if col_count > 6 else portrait(letter)
-        doc = SimpleDocTemplate(output, pagesize=page_size, margin=0.3*inch)
-        elements = [Paragraph(f"<b>Trip Report: {session['current_trip']}</b>", getSampleStyleSheet()['Title'])]
+        # 2. Dynamic PDF Scaling Logic
         pdf_df = df_final.drop(columns=['id'])
+        num_cols = len(pdf_df.columns)
+        
+        # Decide orientation and font size based on column count
+        if num_cols > 10:
+            pagesize = landscape(letter)
+            base_font_size = 6 if num_cols > 15 else 8
+            cell_padding = 2
+        elif num_cols > 6:
+            pagesize = landscape(letter)
+            base_font_size = 9
+            cell_padding = 4
+        else:
+            pagesize = portrait(letter)
+            base_font_size = 10
+            cell_padding = 6
+
+        doc = SimpleDocTemplate(
+            output, 
+            pagesize=pagesize, 
+            rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20
+        )
+        
+        elements = []
+        styles = getSampleStyleSheet()
+        elements.append(Paragraph(f"<b>Trip Report: {session['current_trip'].replace('_', ' ')}</b>", styles['Title']))
+        elements.append(Spacer(1, 0.2*inch))
+
+        # 3. Build Table Data
         data = [pdf_df.columns.values.tolist()] + pdf_df.values.tolist()
+        
+        # 4. Apply Table Styling with Scaled Font
         t = Table(data, repeatRows=1)
-        t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.blue), ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTSIZE', (0,0), (-1,-1), 7 if col_count > 10 else 9)]))
-        elements.append(t); doc.build(elements); output.seek(0)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.blue),
+            ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke),
+            ('ALIGN',(0,0),(-1,-1),'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,-1), base_font_size), # Dynamic Font Size
+            ('BOTTOMPADDING', (0,0), (-1,0), cell_padding),
+            ('TOPPADDING', (0,0), (-1,-1), cell_padding),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ]))
+
+        elements.append(t)
+        doc.build(elements)
+        output.seek(0)
         return send_file(output, as_attachment=True, download_name=f"{session['current_trip']}.pdf")
 
 @app.route('/load_trip/<name>')

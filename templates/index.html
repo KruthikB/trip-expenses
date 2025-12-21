@@ -24,11 +24,75 @@
         
         .btn-act { padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: bold; border: none; cursor: pointer; color: white; }
 
-        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .table-wrapper { 
+            width: 100%; 
+            max-height: 500px; /* Adjust this to show more/fewer rows before scrolling */
+            overflow-y: auto; 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch;
+            border-radius: 8px;  
+        }
         
-        table { width: 100%; border-collapse: collapse; min-width: 800px; font-size: 13px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 800px; 
+            font-size: 13px; 
+            position: relative; /* Required for sticky children */
+            border: 1px solid #a7a7a7;
+        }
+        thead th { 
+            position: sticky; 
+            top: 0; 
+            background-color: #dadfea; /* Primary Blue */
+            color: rgb(0, 0, 0); 
+            z-index: 10; /* Keeps header above the scrolling rows */
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); /* Slight shadow to separate from content */
+            white-space: nowrap;
+        }
+
+        .col-sno {
+            width: 50px;
+            text-align: center;
+        }
+
+        /* Ensure the total row at the bottom stays clear */
+        tr:last-child td {
+            border-bottom: none;
+        }
         
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; border: 1px solid #a7a7a7; background-color: white}
+        
+        .col-sno {
+            position: sticky;
+            left: 0;
+            width: 60px;
+            min-width: 60px;
+            z-index: 5; /* Higher than normal cells, lower than header */
+            background-color: #f8fafc; /* Light gray to distinguish frozen column */
+            text-align: center;
+        }
+
+        /* Intersection: Sticky Top AND Sticky Left (Top-Left Corner) */
+        thead th.col-sno {
+            z-index: 20; /* Highest priority */
+            background-color: #dadfea; /* Darker blue for the corner */
+        }
+
+        /* Intersection: Sticky Bottom AND Sticky Left (Bottom-Left Corner) */
+        .total-row .col-sno {
+            z-index: 15;
+            background-color: #f1f5f9;
+        }
+
+        /* --- STICKY TOTAL FOOTER --- */
+        .total-row {
+            position: sticky;
+            bottom: 0;
+            background: #f1f5f9;
+            font-weight: bold;
+            z-index: 10;
+        }
         .badge-yes { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
         .badge-no { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
 
@@ -56,12 +120,24 @@
 
     <div class="grid">
         <div class="main-content">
+            <div class="card" title="Actual cash paid out of pocket by each person. If they didn't pay for anything, it shows 0.">
+                <h3 style="margin:0 0 10px 0;">💰 Individual Out-of-Pocket Spending</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {% for name, spent in gross_spending.items() %}
+                    <div style="flex: 1; min-width: 140px; background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 0.8rem; color: #64748b;">{{ name }}</div>
+                        <div style="font-size: 1.1rem; font-weight: bold; color: var(--primary);">₹{{ "{:,.2f}".format(spent) }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
             <div class="card" id="input-area">
                 <h3 id="form-title" style="margin:0 0 10px 0;">Add Expense</h3>
                 <form action="/save" method="POST" id="exp-form">
                     <input type="hidden" name="id" id="edit-id">
                     <div style="display:flex; gap:10px;">
-                        <input type="date" name="date" id="edit-date" required>
+                        <input type="date" name="date" id="edit-date" placeholder="Date" required>
                         <input type="number" step="0.01" name="amount" id="edit-amount" placeholder="₹ Amount" required>
                     </div>
                     <input type="text" name="description" id="edit-desc" placeholder="What for?" required>
@@ -87,7 +163,7 @@
 
                 {% if group_settlements %}
                 <div title="The suggested payments required to balance the accounts between different family units." 
-                     style="background: #fff7ed; padding: 12px; border-radius: 8px; border: 1px solid #ffedd5; margin-bottom: 15px; cursor: help;">
+                    style="background: #fff7ed; padding: 12px; border-radius: 8px; border: 1px solid #ffedd5; margin-bottom: 15px; cursor: help;">
                     <h4 style="margin: 0 0 5px 0; color: #9a3412; font-size: 0.9rem;">Inter-Group Settlements</h4>
                     {% for gs in group_settlements %}
                         <div style="font-size: 0.85rem; font-weight: bold; color: #c2410c;">• {{ gs }}</div>
@@ -101,26 +177,38 @@
                         <div class="group-header">
                             <span style="font-weight: bold; color: var(--primary);">{{ g_name }}</span>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn-act" style="background: var(--edit); padding: 4px 8px;" 
-                                        onclick="editGroup('{{ g_name }}')">Edit</button>
+                                <button class="btn-act" 
+                                        style="background: var(--edit); padding: 4px 8px;" 
+                                        onclick="editGroup('{{ g_name }}', '{{ g_data.members | map(attribute='name') | join(',') }}')">
+                                    Edit
+                                </button>
                                 <a href="/delete_group/{{ g_name }}" class="btn-act" 
                                 style="background: var(--delete); padding: 4px 8px;" 
                                 onclick="return confirm('Delete this group?')">Delete</a>
                             </div>
                         </div>
                         
+                        <div style="padding: 10px 12px; background: #f0fdf4; border-bottom: 1px solid #dcfce7;" title="Total actual cash paid by all members of this group combined.">
+                            <small style="color: #166534; font-weight: bold; text-transform: uppercase; font-size: 0.7rem;">Total Cash Paid by Group:</small>
+                            <div style="font-size: 1.1rem; font-weight: bold; color: #166534;">₹{{ "{:,.2f}".format(g_data.total_gross_paid) }}</div>
+                        </div>
+
                         <div class="group-body">
                             {% for m in g_data.members %}
-                            <div class="member-row" title="This is this person's share within this family group. If they are in multiple groups, their total debt is divided by the number of groups.">
-                                <span>{{ m.name }} {% if m.divisor > 1 %}<small>(1/{{m.divisor}} share)</small>{% endif %}</span>
-                                <span style="font-weight: bold; color: {{ '#16a34a' if m.effective_bal >= 0 else '#dc2626' }}">
+                            <div class="member-row" title="Member balance split across groups. Effective Gross is their cash contribution to this group.">
+                                <span>
+                                    {{ m.name }} 
+                                    {% if m.divisor > 1 %}<small style="color:#94a3b8;">(1/{{m.divisor}})</small>{% endif %}
+                                    <br><small style="color: #64748b; font-size: 0.7rem;">Paid: ₹{{ m.effective_gross }}</small>
+                                </span>
+                                <span style="font-weight: bold; color: {{ '#16a34a' if m.effective_bal >= 0 else '#dc2626' }}; align-self: center;">
                                     ₹{{ m.effective_bal }}
                                 </span>
                             </div>
                             {% endfor %}
                         </div>
                         
-                        <div title="The combined net balance of this entire family unit. If positive, the group is owed money; if negative, the group owes others." 
+                        <div title="Group Net Balance (Total Paid - Total Group Share)" 
                             style="padding: 10px; background: #fafafa; text-align: right; font-size: 0.8rem; border-top: 1px dashed #dbeafe; cursor: help;">
                             Group Net: <b>₹{{ g_data.net_balance }}</b>
                         </div>
@@ -184,28 +272,65 @@
         <div class="table-wrapper">
             <table>
                 <thead>
-                    <tr><th>Date</th><th>Item</th><th>Payer</th><th>Total</th>{% for n in participants %}<th>{{ n }} ₹</th><th>Eligible</th>{% endfor %}<th>Actions</th></tr>
+                    <tr>
+                        <th class="col-sno">S.No</th>
+                        <th>Date</th>
+                        <th>Item</th>
+                        <th>Payer</th>
+                        <th>Total</th>
+                        {% for n in participants %}
+                            <th>{{ n }} ₹</th>
+                            <th>Eligible</th>
+                        {% endfor %}
+                        <th>Actions</th>
+                    </tr>
                 </thead>
                 <tbody>
                     {% for e in expenses %}
                     <tr>
-                        <td>{{ e.Date }}</td><td>{{ e.Description }}</td><td>{{ e.Payer }}</td><td>₹{{ e['Total Amount'] }}</td>
+                        <td class="col-sno">{{ loop.index }}</td>
+                        <td>{{ e.Date }}</td>
+                        <td>{{ e.Description }}</td>
+                        <td>{{ e.Payer }}</td>
+                        <td>₹{{ "{:,.2f}".format(e['Total Amount']) }}</td>
+                        
                         {% for n in participants %}
-                        <td>₹{{ e[n] }}</td>
-                        <td><span class="{{ 'badge-yes' if e[n+'_Eligible'] == 'Yes' else 'badge-no' }}">{{ e[n+'_Eligible'] }}</span></td>
+                            <td>₹{{ "{:,.2f}".format(e[n]) }}</td>
+                            <td>
+                                <span class="{{ 'badge-yes' if e[n+'_Eligible'] == 'Yes' else 'badge-no' }}">
+                                    {{ e[n+'_Eligible'] }}
+                                </span>
+                            </td>
                         {% endfor %}
+                        
                         <td>
                             <div style="display:flex; gap:5px;">
-                                <button class="btn-act" style="background: var(--edit);" onclick="editExpense('{{ e.id }}','{{ e.Date }}','{{ e.Description }}','{{ e.Payer }}','{{ e['Total Amount'] }}')">Edit</button>
-                                <a href="/delete_exp/{{ e.id }}" class="btn-act" style="background: var(--delete);" onclick="return confirm('Delete?')">Del</a>
+                                <button class="btn-act" style="background: var(--edit);" 
+                                    onclick="editExpense(
+                                        '{{ e.id }}',
+                                        '{{ e.Date }}',
+                                        '{{ e.Description }}',
+                                        '{{ e.Payer }}',
+                                        '{{ e['Total Amount'] }}',
+                                        '{% set eligible = [] %}{% for n in participants %}{% if e[n+'_Eligible'] == 'Yes' %}{% set _ = eligible.append(n) %}{% endif %}{% endfor %}{{ eligible|join(',') }}'
+                                    )">
+                                    Edit
+                                </button>
+                                <a href="/delete_exp/{{ e.id }}" class="btn-act" style="background: var(--delete);" 
+                                onclick="return confirm('Delete?')">Del</a>
                             </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tr style="background:#f1f5f9; font-weight:bold;">
-                    <td colspan="3" style="text-align:right;">TOTALS:</td><td>₹{{ totals['Total Amount']|default(0) }}</td>
-                    {% for n in participants %}<td>₹{{ totals[n]|default(0) }}</td><td>-</td>{% endfor %}<td></td>
+                <tr style="background:#f1f5f9; font-weight:bold; position: sticky; bottom: 0; z-index: 5;">
+                    <td colspan="4" style="text-align:right;">TOTALS:</td>
+                    <td>₹{{ "{:,.2f}".format(totals['Total Amount']|default(0)) }}</td>
+                    {% for n in participants %}
+                        <td>₹{{ "{:,.2f}".format(totals[n]|default(0)) }}</td>
+                        <td>-</td>
+                    {% endfor %}
+                    <td></td>
                 </tr>
             </table>
         </div>
@@ -213,25 +338,65 @@
 </div>
 
 <script>
-    function editExpense(id, date, desc, payer, amt) {
+    function editExpense(id, date, desc, payer, amt, eligibleString) {
+        // 1. Basic Fields
         document.getElementById('edit-id').value = id;
         document.getElementById('edit-date').value = date;
         document.getElementById('edit-desc').value = desc;
         document.getElementById('edit-amount').value = amt;
+
+        // 2. Set the Payer Dropdown
+        const payerSelect = document.querySelector('select[name="payer"]');
+        if (payerSelect) {
+            payerSelect.value = payer;
+        }
+
+        // 3. Handle Split Checkboxes
+        const eligibleArray = eligibleString.split(',');
+        const splitChecks = document.querySelectorAll('input[name="split_between"]');
+        
+        splitChecks.forEach(checkbox => {
+            // If the person was in the original split, check them; otherwise uncheck
+            if (eligibleArray.includes(checkbox.value)) {
+                checkbox.checked = true;
+            } else {
+                checkbox.checked = false;
+            }
+        });
+
+        // 4. UI Feedback
         const area = document.getElementById('input-area');
         area.classList.add('editing-mode');
         document.getElementById('form-title').innerText = "📝 EDIT MODE";
+        
+        // Scroll smoothly to the form
         area.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    function editGroup(name) {
+    function editGroup(name, membersString) {
+        // 1. Set the Group Name input
         document.getElementById('group_name_input').value = name;
+        
+        // 2. Open the details panel
         document.getElementById('group-form-details').open = true;
         document.getElementById('group_name_input').focus();
         
-        // Reset all checkboxes before letting the user re-select
+        // 3. Convert the comma-separated string back into an array
+        const currentMembers = membersString.split(',');
+        
+        // 4. Update the checkboxes
         const checks = document.querySelectorAll('input[name="group_members"]');
-        checks.forEach(c => c.checked = false);
+        checks.forEach(checkbox => {
+            // If the checkbox value (member name) is in the currentMembers array, check it
+            if (currentMembers.includes(checkbox.value)) {
+                checkbox.checked = true;
+            } else {
+                checkbox.checked = false;
+            }
+        });
+
+        // 5. Scroll to the form for better user experience
+        document.getElementById('group-form-details').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 </script>
 </body>
