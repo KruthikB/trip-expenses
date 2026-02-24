@@ -4,31 +4,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trip Tracker Login</title>
     <style>
-        body { background: #f1f5f9; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .btn { background: #2563eb; color: white; border: none; padding: 14px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; }
-        .trip-item { background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 8px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        body {
+            background: #f1f5f9;
+            font-family: sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+        .trip-item {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #eee;
+        }
+        .trip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .trip-name {
+            color: #2563eb;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .trip-name:hover {
+            text-decoration: underline;
+        }
+        .delete-link {
+            color: red;
+            font-size: 11px;
+            text-decoration: none;
+        }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
+
 <body>
-    <div class="card">
-        <h2 style="text-align: center;">🚀 Trip Tracker</h2>
-        <form method="POST">
-            <input type="text" name="trip_name" id="tn" placeholder="Trip Name" required>
-            <input type="text" name="names" placeholder="Names (Comma separated)">
-            <input type="password" name="password" placeholder="Password (Optional)">
-            <button type="submit" name="start_trip" class="btn">Access Trip</button>
-        </form>
-        {% if existing_trips %}
-        <h4 style="margin-top:20px; color:#64748b; font-size:12px;">EXISTING TRIPS</h4>
-        {% for trip in existing_trips %}
-        <div class="trip-item">
-            <a href="/load_trip/{{ trip }}" style="text-decoration:none; color:#2563eb; font-weight:bold;">📂 {{ trip.replace('_',' ') }}</a>
-            <a href="/delete_trip/{{ trip }}" style="color:red; font-size:11px; text-decoration:none;" onclick="return confirm('Delete trip?')">Delete</a>
+<div class="card">
+
+    <h2 style="text-align: center;">🚀 Trip Tracker</h2>
+
+    <!-- CREATE NEW TRIP -->
+    <form method="POST" action="/">
+        <input type="text" name="trip_name" placeholder="Trip Name" required>
+        <input type="text" name="names" placeholder="Names (comma separated)">
+        <input type="password" name="password" placeholder="Password (optional)">
+        <button type="submit" name="start_trip" class="btn">Access Trip</button>
+    </form>
+
+    {% if existing_trips %}
+    <h4 style="margin-top:20px; color:#64748b; font-size:12px;">EXISTING TRIPS</h4>
+
+    {% for trip in existing_trips %}
+    {% set has_pwd = config.get(trip, {}).get('password') %}
+    <div class="trip-item">
+
+        <div class="trip-header">
+            <!-- CLICKABLE TRIP NAME -->
+            <span class="trip-name"
+                  onclick="handleTripClick('{{ trip }}', {{ 'true' if has_pwd else 'false' }})">
+                📂 {{ trip.replace('_',' ') }}
+            </span>
+
+            <a href="/delete_trip/{{ trip }}"
+               class="delete-link"
+               onclick="return confirm('Delete this trip?')">
+               Delete
+            </a>
         </div>
-        {% endfor %}
-        {% endif %}
+
+        <!-- HIDDEN FORM -->
+        <form method="POST" action="/" id="form-{{ trip }}">
+            <input type="hidden" name="trip_name" value="{{ trip }}">
+            <input type="password"
+                   name="password"
+                   placeholder="Enter Password"
+                   class="hidden"
+                   id="pwd-{{ trip }}">
+            <input type="hidden" name="start_trip" value="1">
+        </form>
+
     </div>
+    {% endfor %}
+    {% endif %}
+
+</div>
+
+<script>
+    function handleTripClick(tripName, hasPassword) {
+        const pwdInput = document.getElementById("pwd-" + tripName);
+        const form = document.getElementById("form-" + tripName);
+
+        if (!hasPassword) {
+            // No password → open directly
+            form.submit();
+            return;
+        }
+
+        // Has password
+        if (pwdInput.classList.contains("hidden")) {
+            // First click → reveal password
+            pwdInput.classList.remove("hidden");
+            pwdInput.focus();
+        } else {
+            // Second click → submit
+            form.submit();
+        }
+    }
+</script>
+
 </body>
 </html>

@@ -120,18 +120,6 @@
 
     <div class="grid">
         <div class="main-content">
-            <div class="card" title="Actual cash paid out of pocket by each person. If they didn't pay for anything, it shows 0.">
-                <h3 style="margin:0 0 10px 0;">💰 Individual Out-of-Pocket Spending</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    {% for name, spent in gross_spending.items() %}
-                    <div style="flex: 1; min-width: 140px; background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 0.8rem; color: #64748b;">{{ name }}</div>
-                        <div style="font-size: 1.1rem; font-weight: bold; color: var(--primary);">₹{{ "{:,.2f}".format(spent) }}</div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
             <div class="card" id="input-area">
                 <h3 id="form-title" style="margin:0 0 10px 0;">Add Expense</h3>
                 <form action="/save" method="POST" id="exp-form">
@@ -155,6 +143,18 @@
                     </div>
                     <button type="submit" class="btn-main" id="sub-btn" style="margin-top:10px;">SAVE EXPENSE</button>
                 </form>
+            </div>
+
+            <div class="card" title="Actual cash paid out of pocket by each person. If they didn't pay for anything, it shows 0.">
+                <h3 style="margin:0 0 10px 0;">💰 Individual Out-of-Pocket Spending</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {% for name, spent in gross_spending.items() %}
+                    <div style="flex: 1; min-width: 140px; background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 0.8rem; color: #64748b;">{{ name }}</div>
+                        <div style="font-size: 1.1rem; font-weight: bold; color: var(--primary);">₹{{ "{:,.2f}".format(spent) }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
 
             <div class="card">
@@ -251,19 +251,28 @@
                 <a href="{{ wa_url }}" target="_blank" style="background:#25d366; color:white; text-decoration:none; padding:12px; border-radius:8px; display:block; text-align:center; font-weight:bold; font-size:0.9rem; margin-top:10px;">WhatsApp Summary</a>
             </div>
 
-            <div class="card" title="Net balance for each person. 'Owed' means they spent more than their share. 'Owes' means they need to pay back.">
+            <div class="card"
+                title="Overall net position of each person (total paid minus total share). This is informational; actual payments are shown in the Settlements section.">
+
                 <h3 style="margin-top: 0;">📊 Active Spenders</h3>
-                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Individual net activity for this trip.</p>
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">
+                    Overall net position for the trip (not direct settlement).
+                </p>
                 
                 {% for name, bal in active_spenders.items() %}
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                     <span style="font-weight: 500;">{{ name }}</span>
                     <span style="font-weight: bold; color: {{ '#16a34a' if bal >= 0 else '#dc2626' }}; font-size: 0.9rem;">
-                        {% if bal >= 0 %} Owed: ₹{{ "{:,.2f}".format(bal) }} {% else %} Owes: ₹{{ "{:,.2f}".format(bal|abs) }} {% endif %}
+                        {% if bal >= 0 %}
+                            Net Credit: ₹{{ "{:,.2f}".format(bal) }}
+                        {% else %}
+                            Net Debit: ₹{{ "{:,.2f}".format(bal|abs) }}
+                        {% endif %}
                     </span>
                 </div>
                 {% endfor %}
             </div>
+
         </div>
     </div>
 

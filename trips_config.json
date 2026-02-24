@@ -1,1 +1,50 @@
-{"Vizag-Puri": {"password": null, "locked": false, "groups": {"Vijay Family": ["Vijay", "Kruthik", "Santhoshi", "Shakunthala", "Paripoorna"], "Kiran Family": ["Kiran", "Shreyas", "Veena", "Shakunthala"], "Anuradha Family": ["Karthik", "Preethi", "Anuradha", "Dayanand", "Divya"]}}}
+{
+    "Vizag-Puri": {
+        "password": null,
+        "locked": false,
+        "groups": {
+            "Vijay Family": [
+                "Vijay",
+                "Kruthik",
+                "Santhoshi",
+                "Shakunthala",
+                "Paripoorna"
+            ],
+            "Kiran Family": [
+                "Kiran",
+                "Shreyas",
+                "Veena",
+                "Shakunthala"
+            ],
+            "Anuradha Family": [
+                "Karthik",
+                "Preethi",
+                "Anuradha",
+                "Dayanand",
+                "Divya"
+            ]
+        }
+    },
+    "Test-Trip": {
+        "password": null,
+        "locked": false,
+        "groups": {}
+    },
+    "Lunch": {
+        "password": null,
+        "locked": false,
+        "groups": {
+            "Kruthik": [
+                "Kruthik",
+                "Shreyas"
+            ],
+            "Karthik": [
+                "Karthik"
+            ],
+            "Pradeep": [
+                "Pradeep",
+                "Prabhas"
+            ]
+        }
+    }
+}
