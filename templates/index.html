@@ -3,409 +3,1263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{{ trip_name }}</title>
+    <title>{{ trip_name }} · Expense Manager</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --edit: #f59e0b; --delete: #ef4444; --excel: #16a34a; --bg: #f8fafc; --group-bg: #f0f7ff; }
-        
-        html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; background: var(--bg); font-family: system-ui, sans-serif; }
-        
-        .container { width: 100%; max-width: 100vw; box-sizing: border-box; padding: 15px; }
-        
-        .grid { display: grid; grid-template-columns: 100%; gap: 15px; }
-        @media (min-width: 992px) { .grid { grid-template-columns: 1fr 400px; } }
+        /* ===== RESET ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; box-sizing: border-box; width: 100%; position: relative; margin-bottom: 15px; }
-        .editing-mode { border: 2px solid var(--edit); background: #fffcf0; }
-
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        
-        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; transition: opacity 0.2s; }
-        .btn-main:active { opacity: 0.8; }
-        
-        .btn-act { padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: bold; border: none; cursor: pointer; color: white; }
-
-        .table-wrapper { 
-            width: 100%; 
-            max-height: 500px; /* Adjust this to show more/fewer rows before scrolling */
-            overflow-y: auto; 
-            overflow-x: auto; 
-            -webkit-overflow-scrolling: touch;
-            border-radius: 8px;  
-        }
-        
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            min-width: 800px; 
-            font-size: 13px; 
-            position: relative; /* Required for sticky children */
-            border: 1px solid #a7a7a7;
-        }
-        thead th { 
-            position: sticky; 
-            top: 0; 
-            background-color: #dadfea; /* Primary Blue */
-            color: rgb(0, 0, 0); 
-            z-index: 10; /* Keeps header above the scrolling rows */
-            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); /* Slight shadow to separate from content */
-            white-space: nowrap;
+        /* ===== DESIGN TOKENS ===== */
+        :root {
+            --primary:        #2563eb;
+            --primary-dark:   #1e40af;
+            --primary-light:  #dbeafe;
+            --success:        #16a34a;
+            --success-bg:     #f0fdf4;
+            --success-border: #bbf7d0;
+            --danger:         #dc2626;
+            --danger-bg:      #fef2f2;
+            --danger-border:  #fecaca;
+            --warning:        #d97706;
+            --warning-bg:     #fffbeb;
+            --pdf-btn:        #4f46e5;
+            --bg:             #f1f5f9;
+            --card:           #ffffff;
+            --border:         #e2e8f0;
+            --text:           #0f172a;
+            --text-muted:     #64748b;
+            --text-light:     #94a3b8;
+            --radius:         14px;
+            --shadow:         0 1px 3px rgba(0,0,0,0.06), 0 4px 14px rgba(0,0,0,0.05);
         }
 
+        html, body {
+            width: 100%; overflow-x: hidden;
+            background: var(--bg);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text); font-size: 15px;
+        }
+
+        .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+
+        /* ===== TOP BAR ===== */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 18px; gap: 12px;
+        }
+        .top-bar-title { font-size: 1.2rem; font-weight: 800; color: var(--text); line-height: 1.1; }
+        .top-bar-sub {
+            display: block; margin-top: 4px; font-size: 0.75rem; font-weight: 600;
+            color: var(--primary); text-decoration: none;
+        }
+        .top-bar-sub:hover { text-decoration: underline; }
+        .top-bar-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+        .btn-export {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 8px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+            color: white; text-decoration: none; border: none; cursor: pointer;
+        }
+        .btn-lock {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 8px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+            color: white; border: none; cursor: pointer;
+            background: #64748b; transition: background 0.2s;
+        }
+        .btn-lock:hover { background: #475569; }
+
+        /* ===== HERO TOTAL ===== */
+        .hero-total {
+            background: linear-gradient(135deg, #1e40af, #2563eb, #0284c7);
+            border-radius: var(--radius); padding: 22px 24px;
+            text-align: center; margin-bottom: 18px; color: white;
+            box-shadow: 0 8px 28px rgba(37,99,235,0.32);
+        }
+        .hero-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.8; }
+        .hero-amount { font-size: 2.6rem; font-weight: 800; line-height: 1.1; letter-spacing: -1.5px; margin-top: 4px; }
+
+        /* ===== BUDGET STRIP ===== */
+        .budget-strip {
+            background: var(--card); border-radius: var(--radius);
+            border: 1px solid var(--border); box-shadow: var(--shadow);
+            padding: 13px 18px; margin-bottom: 18px;
+        }
+        .budget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .budget-title { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
+        .budget-amount { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+        .budget-actions-row { display: flex; gap: 6px; }
+        .btn-budget-action {
+            padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700;
+            border: 1.5px solid var(--border); background: white; cursor: pointer;
+            color: var(--text-muted); transition: color 0.15s, border-color 0.15s;
+        }
+        .btn-budget-action:hover { color: var(--primary); border-color: var(--primary); }
+        .btn-budget-remove:hover  { color: var(--danger);  border-color: var(--danger); }
+        .budget-track { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+        .budget-fill  { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+        .fill-safe    { background: var(--success); }
+        .fill-warn    { background: #f59e0b; }
+        .fill-danger  { background: var(--danger); }
+        .budget-meta  { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); }
+        .budget-remain-ok { color: var(--success); font-weight: 600; }
+        .budget-over      { color: var(--danger);  font-weight: 700; }
+        .btn-set-budget {
+            display: block; width: 100%; padding: 10px; background: none;
+            border: 1.5px dashed var(--border); border-radius: 9px; font-size: 0.82rem;
+            font-weight: 600; color: var(--text-muted); cursor: pointer; text-align: center;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .btn-set-budget:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
+        .budget-form-wrap { margin-top: 10px; }
+        .budget-form { display: flex; gap: 8px; align-items: center; }
+        .budget-form input {
+            flex: 1; padding: 9px 12px; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+        }
+        .budget-form input:focus { border-color: var(--primary); }
+        .btn-budget-save {
+            padding: 9px 16px; background: var(--primary); color: white; border: none;
+            border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+        }
+        .btn-budget-save:hover { background: var(--primary-dark); }
+        .btn-budget-cancel-sm {
+            padding: 9px 12px; background: none; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); cursor: pointer; white-space: nowrap;
+        }
+
+        /* ===== TAB BAR ===== */
+        .tab-bar {
+            display: flex; gap: 4px; background: var(--card);
+            border-radius: var(--radius); border: 1px solid var(--border);
+            box-shadow: var(--shadow); padding: 5px; margin-bottom: 18px;
+        }
+        .tab-btn {
+            flex: 1; padding: 9px 16px; border: none; border-radius: 10px;
+            background: transparent; font-size: 0.85rem; font-weight: 600;
+            color: var(--text-muted); cursor: pointer; transition: background 0.15s, color 0.15s;
+        }
+        .tab-btn:hover  { background: #f1f5f9; color: var(--text); }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        /* ===== LAYOUT GRID ===== */
+        .main-grid { display: flex; flex-direction: column; gap: 0; }
+        .sidebar  { order: 1; }
+        .main-col { order: 2; }
+        @media (min-width: 992px) {
+            .main-grid { display: grid; grid-template-columns: 1fr 370px; gap: 18px; align-items: start; }
+            .main-col { order: 1; }
+            .sidebar  { order: 2; }
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--card); border-radius: var(--radius);
+            border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden;
+        }
+        .card-head { padding: 14px 18px; border-bottom: 1px solid #f8fafc; }
+        .card-head-collapsible {
+            padding: 14px 18px; display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; user-select: none;
+            border-bottom: 1px solid #f8fafc; transition: background 0.15s;
+        }
+        .card-head-collapsible:hover { background: #fafbff; }
+        .card-head-left { flex: 1; min-width: 0; }
+        .card-title   { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+        .card-subtitle { font-size: 0.73rem; color: var(--text-muted); margin-top: 2px; }
+        .collapse-chevron { font-size: 0.85rem; color: var(--text-muted); transition: transform 0.25s ease; flex-shrink: 0; margin-left: 10px; line-height: 1; }
+        .collapse-chevron.is-collapsed { transform: rotate(-90deg); }
+
+        /* ===== COLLAPSIBLE BODY ===== */
+        .collapsible-body {
+            max-height: 340px; overflow-y: auto; overflow-x: hidden;
+            transition: max-height 0.3s ease, opacity 0.25s ease; opacity: 1;
+        }
+        .collapsible-body.is-collapsed { max-height: 0 !important; opacity: 0; }
+        .collapsible-body::-webkit-scrollbar { width: 5px; }
+        .collapsible-body::-webkit-scrollbar-track { background: #f8fafc; }
+        .collapsible-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .card-body { padding: 16px 18px 18px 18px; }
+
+        /* ===== SETTLEMENT CARD ===== */
+        .settle-scroll-inner { padding: 14px 16px 16px 16px; }
+        .settlement-item {
+            display: flex; align-items: center; gap: 10px;
+            background: #f8fafc; border: 1px solid var(--border);
+            border-radius: 11px; padding: 10px 12px; margin-bottom: 8px;
+            transition: background 0.2s;
+        }
+        .settlement-item.is-confirmed {
+            background: var(--success-bg); border-color: var(--success-border);
+        }
+        .s-person { display: flex; flex-direction: column; align-items: center; min-width: 52px; max-width: 68px; }
+        .avatar {
+            width: 38px; height: 38px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-weight: 800;
+            font-size: 0.95rem; color: white; flex-shrink: 0;
+        }
+        .s-name {
+            font-size: 0.68rem; font-weight: 600; color: var(--text-muted);
+            margin-top: 4px; text-align: center; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap; width: 100%;
+        }
+        .s-center { flex: 1; text-align: center; }
+        .s-amount { font-size: 1rem; font-weight: 800; color: var(--text); }
+        .s-arrow  { font-size: 1.3rem; color: var(--text-light); margin-top: 1px; }
+        .is-confirmed .s-amount { color: var(--success); }
+        .is-confirmed .s-arrow  { color: var(--success); }
+
+        /* Settlement confirm button */
+        .btn-settle-tick {
+            width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border);
+            background: white; color: var(--text-light); font-size: 0.85rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.2s;
+        }
+        .btn-settle-tick:hover { border-color: var(--success); color: var(--success); }
+        .btn-settle-tick.confirmed { background: var(--success); border-color: var(--success); color: white; }
+
+        .wa-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: #25d366; color: white; padding: 12px; border-radius: 10px;
+            text-decoration: none; font-weight: 700; font-size: 0.88rem; margin-top: 4px;
+        }
+        .no-settle { text-align: center; padding: 24px 12px; color: var(--text-muted); font-size: 0.9rem; }
+
+        /* ===== BALANCE SUMMARY ===== */
+        .balance-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 18px; border-bottom: 1px solid #f8fafc;
+        }
+        .balance-row:last-child { border-bottom: none; }
+        .bal-info { flex: 1; min-width: 0; }
+        .bal-name { font-weight: 600; font-size: 0.88rem; color: var(--text); }
+        .bal-sub  { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+        .net-chip { font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+        .chip-pos  { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+        .chip-neg  { background: var(--danger-bg);  color: var(--danger);  border: 1px solid var(--danger-border); }
+        .chip-zero { background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
+
+        /* ===== ADD EXPENSE BUTTON ===== */
+        .btn-add-expense {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 15px 20px; background: var(--primary); color: white;
+            border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 700;
+            cursor: pointer; margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(37,99,235,0.28);
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        }
+        .btn-add-expense:hover  { background: var(--primary-dark); box-shadow: 0 6px 20px rgba(37,99,235,0.38); }
+        .btn-add-expense:active { transform: scale(0.98); }
+        .btn-add-expense-icon {
+            width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem; line-height: 1;
+        }
+        .locked-notice {
+            text-align: center; padding: 14px; background: #f8fafc;
+            border: 1.5px dashed var(--border); border-radius: var(--radius);
+            color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65);
+            z-index: 1000; align-items: center; justify-content: center;
+            padding: 16px; backdrop-filter: blur(2px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: white; border-radius: 18px; width: 100%; max-width: 520px;
+            max-height: 92vh; overflow-y: auto;
+            box-shadow: 0 24px 72px rgba(0,0,0,0.3); animation: modalIn 0.22s ease;
+        }
+        @keyframes modalIn {
+            from { transform: translateY(18px) scale(0.98); opacity: 0; }
+            to   { transform: translateY(0)   scale(1);    opacity: 1; }
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 18px 20px 16px 20px; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; background: white; z-index: 1; border-radius: 18px 18px 0 0;
+        }
+        .modal-title-text { font-size: 1rem; font-weight: 700; color: var(--text); }
+        .btn-close-modal {
+            width: 32px; height: 32px; border-radius: 50%; border: none; background: #f1f5f9;
+            color: var(--text-muted); font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s, color 0.15s; flex-shrink: 0;
+        }
+        .btn-close-modal:hover { background: var(--danger-bg); color: var(--danger); }
+        .modal-edit-banner {
+            background: var(--warning-bg); border-bottom: 2px solid #f59e0b;
+            padding: 9px 20px; font-size: 0.8rem; font-weight: 700; color: var(--warning); display: none;
+        }
+        .modal-edit-banner.active { display: block; }
+
+        /* ===== EXPENSE FORM ===== */
+        .form-body { padding: 18px 20px 20px 20px; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .form-row input { flex: 1; margin-bottom: 0; }
+        .form-body input, .form-body select {
+            width: 100%; padding: 11px 13px; border: 1.5px solid var(--border);
+            border-radius: 9px; font-size: 15px; color: var(--text); outline: none;
+            margin-bottom: 10px; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-body input:focus, .form-body select:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .form-label { font-size: 0.73rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 6px; display: block; }
+
+        /* ===== DESCRIPTION SUGGESTIONS ===== */
+        .desc-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -4px; margin-bottom: 10px; }
+        .desc-chip {
+            padding: 4px 11px; background: #f1f5f9; border: 1.5px solid var(--border);
+            border-radius: 20px; font-size: 0.75rem; font-weight: 500; color: var(--text-muted);
+            cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; white-space: nowrap;
+        }
+        .desc-chip:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
+        .split-section-label {
+            font-size: 0.73rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 7px;
+        }
+        .split-toggles { display: flex; gap: 8px; margin-bottom: 9px; }
+        .btn-toggle {
+            padding: 5px 13px; border: 1.5px solid var(--border); border-radius: 7px;
+            background: white; font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+            cursor: pointer; transition: border-color 0.15s, color 0.15s;
+        }
+        .btn-toggle:hover { border-color: var(--primary); color: var(--primary); }
+        .split-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            background: #f8fafc; border: 1.5px solid var(--border); border-radius: 9px;
+            padding: 12px; margin-bottom: 12px;
+        }
+        .split-label {
+            display: flex; align-items: center; gap: 8px; font-size: 0.85rem;
+            font-weight: 500; cursor: pointer; user-select: none;
+        }
+        .split-label input[type="checkbox"] {
+            width: 16px; height: 16px; accent-color: var(--primary); flex-shrink: 0; cursor: pointer;
+        }
+        .btn-save {
+            width: 100%; padding: 14px; background: var(--primary); color: white;
+            border: none; border-radius: 9px; font-size: 0.95rem; font-weight: 700;
+            cursor: pointer; transition: background 0.2s, transform 0.1s;
+        }
+        .btn-save:hover   { background: var(--primary-dark); }
+        .btn-save:active  { transform: scale(0.99); }
+        .btn-save:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        /* ===== GROUPS ===== */
+        .intergroup-alert {
+            background: #fff7ed; border: 1px solid #ffedd5; border-radius: 10px;
+            padding: 14px; margin-bottom: 16px;
+        }
+        .intergroup-alert-title {
+            font-size: 0.73rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.07em; color: #9a3412; margin-bottom: 8px;
+        }
+        .intergroup-line {
+            font-size: 0.88rem; font-weight: 600; color: #c2410c;
+            padding: 5px 0; border-bottom: 1px dashed #fed7aa;
+        }
+        .intergroup-line:last-child { border-bottom: none; }
+        .group-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 12px; }
+        .group-card { border: 1px solid var(--primary-light); border-radius: 11px; overflow: hidden; }
+        .group-card-head {
+            background: #eff6ff; padding: 10px 14px; display: flex;
+            justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary-light);
+        }
+        .group-card-title { font-weight: 700; color: var(--primary); font-size: 0.88rem; }
+        .group-actions { display: flex; gap: 6px; }
+        .btn-sm {
+            padding: 5px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700;
+            border: none; cursor: pointer; color: white; text-decoration: none;
+        }
+        .group-paid-strip { padding: 8px 14px; background: var(--success-bg); border-bottom: 1px solid var(--success-border); }
+        .group-paid-label { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--success); }
+        .group-paid-amount { font-size: 1rem; font-weight: 800; color: var(--success); }
+        .group-member-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; border-bottom: 1px solid #f8fafc; font-size: 0.82rem; }
+        .group-member-row:last-child { border-bottom: none; }
+        .member-name   { font-weight: 500; color: var(--text); }
+        .member-note   { font-size: 0.68rem; color: var(--text-light); }
+        .member-paid   { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+        .member-bal    { font-weight: 700; font-size: 0.85rem; }
+        .group-footer  { padding: 8px 14px; background: #fafafa; border-top: 1px dashed var(--border); text-align: right; font-size: 0.77rem; color: var(--text-muted); }
+        .btn-create-group {
+            display: block; width: 100%; margin-top: 14px; padding: 12px;
+            background: #f8fafc; border: 1.5px dashed var(--border); border-radius: 10px;
+            font-size: 0.85rem; font-weight: 700; color: var(--primary); text-align: center;
+            cursor: pointer; transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-create-group:hover { background: #eff6ff; border-color: var(--primary-light); }
+        .group-form-panel { display: none; margin-top: 12px; padding: 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; }
+        .group-form-panel.open { display: block; }
+        .group-form-panel input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 10px; outline: none; }
+        .group-form-panel input:focus { border-color: var(--primary); }
+        .member-check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .member-check-grid label { display: flex; align-items: center; gap: 6px; font-size: 0.83rem; cursor: pointer; }
+
+        /* ===== LEDGER TABLE ===== */
+        .ledger-head { padding: 14px 18px 10px 18px; }
+        .ledger-top-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .ledger-search {
+            padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 13px; outline: none; width: 200px; transition: border-color 0.2s;
+        }
+        .ledger-search:focus { border-color: var(--primary); }
+        .scroll-hint { font-size: 0.72rem; color: var(--text-light); padding: 0 18px 8px 18px; }
+        .table-wrap { overflow-x: auto; overflow-y: auto; max-height: 520px; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px; }
+        thead th {
+            position: sticky; top: 0; z-index: 10; background: #e8edf5; color: #1e293b;
+            font-weight: 700; font-size: 0.71rem; text-transform: uppercase; letter-spacing: 0.06em;
+            padding: 10px 12px; white-space: nowrap; border-bottom: 2px solid #cbd5e1;
+        }
+        tbody td { padding: 11px 12px; border-bottom: 1px solid #f1f5f9; color: var(--text); }
+        tbody tr:hover td { background: #fafbff; }
         .col-sno {
-            width: 50px;
-            text-align: center;
+            position: sticky; left: 0; z-index: 5; background: #f8fafc;
+            width: 48px; min-width: 48px; text-align: center; font-weight: 600; font-size: 0.73rem; color: var(--text-muted);
+        }
+        thead th.col-sno { z-index: 20; background: #e8edf5; }
+        .total-row td {
+            background: #f1f5f9 !important; font-weight: 700; position: sticky; bottom: 0;
+            z-index: 10; border-top: 2px solid #cbd5e1; padding: 10px 12px;
+        }
+        .total-row .col-sno { z-index: 15; }
+        .share-yes { color: var(--success); font-weight: 600; }
+        .share-no  { color: var(--text-light); }
+        .btn-edit-row {
+            padding: 6px 11px; background: #f59e0b; color: white; border: none;
+            border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;
+        }
+        .btn-del-row {
+            padding: 6px 11px; background: var(--danger); color: white; border-radius: 6px;
+            font-size: 0.72rem; font-weight: 700; text-decoration: none; display: inline-block;
         }
 
-        /* Ensure the total row at the bottom stays clear */
-        tr:last-child td {
-            border-bottom: none;
+        /* ===== ANALYTICS TAB ===== */
+        .analytics-grid {
+            display: grid; grid-template-columns: 1fr; gap: 16px;
         }
-        
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; border: 1px solid #a7a7a7; background-color: white}
-        
-        .col-sno {
-            position: sticky;
-            left: 0;
-            width: 60px;
-            min-width: 60px;
-            z-index: 5; /* Higher than normal cells, lower than header */
-            background-color: #f8fafc; /* Light gray to distinguish frozen column */
-            text-align: center;
+        @media (min-width: 768px) {
+            .analytics-grid { grid-template-columns: 1fr 1fr; }
         }
+        .analytics-card { margin-bottom: 0; }
+        .analytics-card .card-body { padding: 16px 18px; }
+        .chart-wrap { position: relative; }
 
-        /* Intersection: Sticky Top AND Sticky Left (Top-Left Corner) */
-        thead th.col-sno {
-            z-index: 20; /* Highest priority */
-            background-color: #dadfea; /* Darker blue for the corner */
+        /* Top expenses list */
+        .top-exp-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 18px; border-bottom: 1px solid #f8fafc;
         }
-
-        /* Intersection: Sticky Bottom AND Sticky Left (Bottom-Left Corner) */
-        .total-row .col-sno {
-            z-index: 15;
-            background-color: #f1f5f9;
+        .top-exp-row:last-child { border-bottom: none; }
+        .top-exp-rank {
+            width: 28px; height: 28px; border-radius: 50%; background: var(--primary-light);
+            color: var(--primary); font-weight: 800; font-size: 0.75rem;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
+        .top-exp-info { flex: 1; min-width: 0; }
+        .top-exp-desc { font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .top-exp-meta { font-size: 0.71rem; color: var(--text-muted); margin-top: 2px; }
+        .top-exp-amt  { font-weight: 800; font-size: 0.9rem; color: var(--primary); white-space: nowrap; }
 
-        /* --- STICKY TOTAL FOOTER --- */
-        .total-row {
-            position: sticky;
-            bottom: 0;
-            background: #f1f5f9;
-            font-weight: bold;
-            z-index: 10;
+        /* ===== EMPTY STATE ===== */
+        .empty-state { text-align: center; padding: 52px 20px; color: var(--text-muted); }
+        .empty-icon  { font-size: 2.8rem; margin-bottom: 14px; }
+        .empty-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 5px; }
+        .empty-sub   { font-size: 0.8rem; color: var(--text-light); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 480px) {
+            .hero-amount  { font-size: 2.1rem; }
+            .btn-edit-row, .btn-del-row { padding: 8px 12px; font-size: 0.78rem; }
+            .page         { padding: 12px; }
+            .ledger-search { width: 140px; }
         }
-        .badge-yes { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        .badge-no { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-
-        /* Group Specific Styles */
-        .group-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
-        .group-card { border: 1px solid #dbeafe; border-radius: 10px; overflow: hidden; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .group-header { background: var(--group-bg); padding: 12px; border-bottom: 1px solid #dbeafe; display: flex; justify-content: space-between; align-items: center; }
-        .member-row { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
-        
         html { scroll-behavior: smooth; }
     </style>
 </head>
 <body>
-<div class="container">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+<div class="page">
+
+    <!-- ===== TOP BAR ===== -->
+    <div class="top-bar">
         <div>
-            <h1 style="margin:0; font-size: 1.3rem;">📍 {{ trip_name }}</h1>
-            <a href="/new_trip" style="color:var(--primary); font-size:12px; text-decoration:none; font-weight:bold;">← HOME</a>
+            <div class="top-bar-title">📍 {{ trip_name }}</div>
+            <a href="/new_trip" class="top-bar-sub">← All Ledgers</a>
         </div>
-        <div style="display: flex; gap: 5px;">
-            <a href="/download/pdf" class="btn-act" style="background: var(--delete);">PDF</a>
-            <a href="/download/excel" class="btn-act" style="background: var(--excel);">EXCEL</a>
+        <div class="top-bar-actions">
+            <a href="/download/pdf"   class="btn-export" style="background:var(--pdf-btn);">📄 PDF</a>
+            <a href="/download/excel" class="btn-export" style="background:#16a34a;">📊 Excel</a>
+            <form method="POST" action="/toggle_lock" style="margin:0;">
+                <button type="submit" class="btn-lock" title="{{ 'Click to unlock' if locked else 'Click to lock' }}">
+                    {{ '🔒 Locked' if locked else '🔓 Unlocked' }}
+                </button>
+            </form>
         </div>
     </div>
 
-    <div class="grid">
-        <div class="main-content">
-            <div class="card" id="input-area">
-                <h3 id="form-title" style="margin:0 0 10px 0;">Add Expense</h3>
-                <form action="/save" method="POST" id="exp-form">
-                    <input type="hidden" name="id" id="edit-id">
-                    <div style="display:flex; gap:10px;">
-                        <input type="date" name="date" id="edit-date" placeholder="Date" required>
-                        <input type="number" step="0.01" name="amount" id="edit-amount" placeholder="₹ Amount" required>
-                    </div>
-                    <input type="text" name="description" id="edit-desc" placeholder="What for?" required>
-                    <select name="payer">
-                        {% for n in participants %}
-                        <option value="{{ n }}">{{ n }}</option>
-                        {% endfor %}
-                    </select>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f8fafc; padding:10px; border-radius:8px;">
-                        {% for n in participants %}
-                        <label style="font-size: 14px; cursor: pointer;">
-                            <input type="checkbox" name="split_between" value="{{ n }}" checked> {{ n }}
-                        </label>
-                        {% endfor %}
-                    </div>
-                    <button type="submit" class="btn-main" id="sub-btn" style="margin-top:10px;">SAVE EXPENSE</button>
-                </form>
-            </div>
+    <!-- ===== HERO TOTAL ===== -->
+    <div class="hero-total">
+        <div class="hero-label">Total Expenses</div>
+        <div class="hero-amount">₹{{ "{:,.2f}".format(totals['Total Amount']|default(0)) }}</div>
+    </div>
 
-            <div class="card" title="Actual cash paid out of pocket by each person. If they didn't pay for anything, it shows 0.">
-                <h3 style="margin:0 0 10px 0;">💰 Individual Out-of-Pocket Spending</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    {% for name, spent in gross_spending.items() %}
-                    <div style="flex: 1; min-width: 140px; background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 0.8rem; color: #64748b;">{{ name }}</div>
-                        <div style="font-size: 1.1rem; font-weight: bold; color: var(--primary);">₹{{ "{:,.2f}".format(spent) }}</div>
+    <!-- ===== BUDGET STRIP ===== -->
+    <div class="budget-strip">
+        {% if budget %}
+            {% set spent     = totals['Total Amount'] %}
+            {% set pct       = [[spent / budget * 100, 0] | max, 100] | min %}
+            {% set remaining = budget - spent %}
+            <div class="budget-header">
+                <div>
+                    <span class="budget-title">Budget</span>
+                    <span class="budget-amount">&nbsp;₹{{ "{:,.0f}".format(budget) }}</span>
+                </div>
+                <div class="budget-actions-row">
+                    <button type="button" class="btn-budget-action" onclick="toggleBudgetForm(true)">Edit</button>
+                    <button type="button" class="btn-budget-action btn-budget-remove" onclick="removeBudget()">Remove</button>
+                </div>
+            </div>
+            <div class="budget-track">
+                <div class="budget-fill {{ 'fill-danger' if pct >= 90 else ('fill-warn' if pct >= 75 else 'fill-safe') }}"
+                     style="width: {{ pct }}%;"></div>
+            </div>
+            <div class="budget-meta">
+                {% if remaining >= 0 %}
+                    <span class="budget-remain-ok">₹{{ "{:,.0f}".format(remaining) }} remaining</span>
+                {% else %}
+                    <span class="budget-over">⚠ ₹{{ "{:,.0f}".format(remaining | abs) }} over budget</span>
+                {% endif %}
+                <span>{{ "{:.0f}".format(pct) }}% used</span>
+            </div>
+        {% else %}
+            <button type="button" class="btn-set-budget" onclick="toggleBudgetForm(true)">
+                💡 Budget: Not Set &nbsp;·&nbsp; Click to set a budget
+            </button>
+        {% endif %}
+        <div class="budget-form-wrap" id="budget-form-wrap" style="display:none;">
+            <form action="/set_budget" method="POST" class="budget-form">
+                <input type="number" name="budget" id="budget-input"
+                       placeholder="Enter total budget (₹)"
+                       value="{{ budget | int if budget else '' }}"
+                       step="1" min="1" required>
+                <button type="submit" class="btn-budget-save">Save</button>
+                <button type="button" class="btn-budget-cancel-sm" onclick="toggleBudgetForm(false)">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== TAB BAR ===== -->
+    <div class="tab-bar">
+        <button class="tab-btn active" data-tab="overview"   onclick="switchTab('overview')">📋 Overview</button>
+        <button class="tab-btn"        data-tab="analytics"  onclick="switchTab('analytics')">📈 Analytics</button>
+    </div>
+
+    <!-- ================================================================
+         OVERVIEW TAB
+         ================================================================ -->
+    <div id="tab-overview" class="tab-content">
+
+        <div class="main-grid">
+
+            <!-- ====== SIDEBAR ====== -->
+            <div class="sidebar">
+
+                <!-- Settlements -->
+                <div class="card">
+                    <div class="card-head-collapsible" onclick="toggleCard('settlements')">
+                        <div class="card-head-left">
+                            <div class="card-title">🤝 Settlements</div>
+                            <div class="card-subtitle">Who pays whom · tap ○ when paid</div>
+                        </div>
+                        <span class="collapse-chevron is-collapsed" id="chevron-settlements">▾</span>
                     </div>
-                    {% endfor %}
+                    <div class="collapsible-body is-collapsed" id="body-settlements">
+                        <div class="settle-scroll-inner">
+                            {% if settlements %}
+                                {% for s in settlements %}
+                                {% set parts     = s.split(' pays ') %}
+                                {% set from_name = parts[0] %}
+                                {% set to_parts  = parts[1].split(': Rs.') %}
+                                {% set to_name   = to_parts[0] %}
+                                {% set amount    = to_parts[1] %}
+                                {% set pair_key  = from_name + '|' + to_name %}
+                                {% set confirmed = pair_key in confirmed_set %}
+                                <div class="settlement-item {{ 'is-confirmed' if confirmed else '' }}">
+                                    <div class="s-person">
+                                        <div class="avatar" style="background:var(--danger);">{{ from_name[0] }}</div>
+                                        <div class="s-name">{{ from_name }}</div>
+                                    </div>
+                                    <div class="s-center">
+                                        <div class="s-amount">₹{{ amount }}</div>
+                                        <div class="s-arrow">→</div>
+                                    </div>
+                                    <div class="s-person">
+                                        <div class="avatar" style="background:var(--success);">{{ to_name[0] }}</div>
+                                        <div class="s-name">{{ to_name }}</div>
+                                    </div>
+                                    <!-- Confirm button -->
+                                    <form method="POST" action="/confirm_settlement" style="margin-left:auto; flex-shrink:0;">
+                                        <input type="hidden" name="from_person" value="{{ from_name }}">
+                                        <input type="hidden" name="to_person"   value="{{ to_name }}">
+                                        <input type="hidden" name="action"      value="{{ 'unconfirm' if confirmed else 'confirm' }}">
+                                        <button type="submit" class="btn-settle-tick {{ 'confirmed' if confirmed else '' }}"
+                                                title="{{ 'Paid — click to unmark' if confirmed else 'Mark as paid' }}">
+                                            {{ '✓' if confirmed else '○' }}
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endfor %}
+                                <a href="{{ wa_url }}" target="_blank" class="wa-btn">💬 Share on WhatsApp</a>
+                            {% else %}
+                                <div class="no-settle">🎉 All settled up!<br>No payments needed.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance Summary -->
+                <div class="card">
+                    <div class="card-head-collapsible" onclick="toggleCard('balance')">
+                        <div class="card-head-left">
+                            <div class="card-title">📊 Balance Summary</div>
+                            <div class="card-subtitle">Each person's paid, share and net position</div>
+                        </div>
+                        <span class="collapse-chevron is-collapsed" id="chevron-balance">▾</span>
+                    </div>
+                    <div class="collapsible-body is-collapsed" id="body-balance">
+                        {% set av_colors = ['#4f46e5','#0891b2','#059669','#d97706','#7c3aed','#0284c7','#b45309','#be185d'] %}
+                        {% set color_count = av_colors | length %}
+                        {% for p in participants %}
+                        {% set bal   = balances[p] %}
+                        {% set paid  = gross_spending[p] %}
+                        {% set share = totals[p] %}
+                        {% set color = av_colors[loop.index0 % color_count] %}
+                        <div class="balance-row">
+                            <div class="avatar" style="background: {{ color }}; width:36px; height:36px; font-size:0.82rem;">{{ p[0] }}</div>
+                            <div class="bal-info">
+                                <div class="bal-name">{{ p }}</div>
+                                <div class="bal-sub">Paid ₹{{ "{:,.0f}".format(paid) }} &middot; Share ₹{{ "{:,.0f}".format(share) }}</div>
+                            </div>
+                            {% if bal > 0.01 %}
+                                <span class="net-chip chip-pos">+₹{{ "{:,.2f}".format(bal) }}</span>
+                            {% elif bal < -0.01 %}
+                                <span class="net-chip chip-neg">−₹{{ "{:,.2f}".format(bal|abs) }}</span>
+                            {% else %}
+                                <span class="net-chip chip-zero">Settled</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div><!-- /sidebar -->
+
+            <!-- ====== MAIN COLUMN ====== -->
+            <div class="main-col">
+
+                {% if locked %}
+                <div class="locked-notice">🔒 Ledger is locked — click <strong>Unlocked</strong> in the top bar to make changes</div>
+                {% else %}
+                <button class="btn-add-expense" onclick="openModal()">
+                    <span class="btn-add-expense-icon">+</span>
+                    Add Expense
+                </button>
+                {% endif %}
+
+                <!-- Family Groups -->
+                <div class="card">
+                    <div class="card-head-collapsible" onclick="toggleCard('groups')">
+                        <div class="card-head-left">
+                            <div class="card-title">👨‍👩‍👧‍👦 Family Groups</div>
+                            <div class="card-subtitle">Proportional expenses tracked per family unit</div>
+                        </div>
+                        <span class="collapse-chevron is-collapsed" id="chevron-groups">▾</span>
+                    </div>
+                    <div class="collapsible-body is-collapsed" id="body-groups" style="max-height:600px;">
+                    <div class="card-body">
+
+                        {% if group_settlements %}
+                        <div class="intergroup-alert">
+                            <div class="intergroup-alert-title">⚡ Inter-Group Settlements</div>
+                            {% for gs in group_settlements %}
+                            <div class="intergroup-line">{{ gs | replace('Rs.', '₹') }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if group_stats %}
+                        <div class="group-grid">
+                            {% for g_name, g_data in group_stats.items() %}
+                            <div class="group-card">
+                                <div class="group-card-head">
+                                    <span class="group-card-title">{{ g_name }}</span>
+                                    <div class="group-actions">
+                                        <button class="btn-sm" style="background:var(--warning);"
+                                                onclick="editGroup('{{ g_name }}', '{{ g_data.members | map(attribute='name') | join(',') }}')">Edit</button>
+                                        <a href="/delete_group/{{ g_name }}" class="btn-sm" style="background:var(--danger);"
+                                           onclick="return confirm('Delete group {{ g_name }}?')">Delete</a>
+                                    </div>
+                                </div>
+                                <div class="group-paid-strip">
+                                    <div class="group-paid-label">Total Cash Paid</div>
+                                    <div class="group-paid-amount">₹{{ "{:,.2f}".format(g_data.total_gross_paid) }}</div>
+                                </div>
+                                {% for m in g_data.members %}
+                                <div class="group-member-row">
+                                    <div>
+                                        <div class="member-name">
+                                            {{ m.name }}
+                                            {% if m.divisor > 1 %}
+                                            <span class="member-note">(shared across {{ m.divisor }} groups)</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="member-paid">Paid: ₹{{ m.effective_gross }}</div>
+                                    </div>
+                                    <span class="member-bal" style="color:{{ 'var(--success)' if m.effective_bal >= 0 else 'var(--danger)' }};">
+                                        {{ '+' if m.effective_bal >= 0 else '' }}₹{{ m.effective_bal }}
+                                    </span>
+                                </div>
+                                {% endfor %}
+                                <div class="group-footer">
+                                    Group Net: <b style="color:{{ 'var(--success)' if g_data.net_balance >= 0 else 'var(--danger)' }};">₹{{ g_data.net_balance }}</b>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <button type="button" class="btn-create-group" onclick="toggleGroupForm()">+ Create / Update Group</button>
+                        <div class="group-form-panel" id="group-form-panel">
+                            <form action="/manage_groups" method="POST">
+                                <input type="text" name="group_name" id="group_name_input" placeholder="Group Name" required>
+                                <div class="member-check-grid">
+                                    {% for p in participants %}
+                                    <label><input type="checkbox" name="group_members" value="{{ p }}"> {{ p }}</label>
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" class="btn-save">Save Group</button>
+                            </form>
+                        </div>
+
+                    </div>
+                    </div><!-- /collapsible-body groups -->
+                </div>
+
+            </div><!-- /main-col -->
+
+        </div><!-- /main-grid -->
+
+        <!-- ===== TRANSACTION LEDGER ===== -->
+        <div class="card" style="margin-bottom:16px;">
+            <div class="ledger-head">
+                <div class="ledger-top-row">
+                    <div class="card-title">🧾 Transaction Ledger</div>
+                    <input type="text" class="ledger-search" id="ledger-search"
+                           placeholder="🔍 Search expenses…" oninput="filterLedger(this.value)">
+                </div>
+            </div>
+            <div class="scroll-hint">← Swipe to see all columns</div>
+            <div class="table-wrap">
+                {% if expenses %}
+                <table id="ledger-table">
+                    <thead>
+                        <tr>
+                            <th class="col-sno">#</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            {% if has_categories %}<th>Category</th>{% endif %}
+                            <th>Payer</th>
+                            <th>Total</th>
+                            {% for n in participants %}<th>{{ n }}</th>{% endfor %}
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in expenses %}
+                        <tr>
+                            <td class="col-sno">{{ loop.index }}</td>
+                            <td style="white-space:nowrap; color:var(--text-muted);">{{ e.Date }}</td>
+                            <td>{{ e.Description }}</td>
+                            {% if has_categories %}
+                            <td style="white-space:nowrap; color:var(--text-muted); font-size:0.8rem;">{{ e.get('Category', '—') }}</td>
+                            {% endif %}
+                            <td style="font-weight:600;">{{ e.Payer }}</td>
+                            <td style="font-weight:700; white-space:nowrap;">₹{{ "{:,.2f}".format(e['Total Amount']) }}</td>
+                            {% for n in participants %}
+                            <td class="{{ 'share-yes' if e[n+'_Eligible'] == 'Yes' else 'share-no' }}">
+                                {% if e[n+'_Eligible'] == 'Yes' %}₹{{ "{:,.2f}".format(e[n]) }}{% else %}—{% endif %}
+                            </td>
+                            {% endfor %}
+                            <td>
+                                {% if not locked %}
+                                <div style="display:flex; gap:5px;">
+                                    <button class="btn-edit-row"
+                                        onclick="editExpense(
+                                            '{{ e.id }}',
+                                            '{{ e.Date }}',
+                                            '{{ e.Description }}',
+                                            '{{ e.get('Category', 'Miscellaneous') }}',
+                                            '{{ e.Payer }}',
+                                            '{{ e['Total Amount'] }}',
+                                            '{% set elig = [] %}{% for n in participants %}{% if e[n+'_Eligible'] == 'Yes' %}{% set _ = elig.append(n) %}{% endif %}{% endfor %}{{ elig|join(',') }}'
+                                        )">Edit</button>
+                                    <a href="/delete_exp/{{ e.id }}" class="btn-del-row"
+                                       onclick="return confirm('Delete this expense?')">Del</a>
+                                </div>
+                                {% else %}
+                                <span style="color:var(--text-light); font-size:0.75rem;">locked</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tr class="total-row">
+                        <td class="col-sno">—</td>
+                        <td colspan="{{ 2 + (1 if has_categories else 0) }}" style="text-align:right; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Totals</td>
+                        <td></td>
+                        <td style="color:var(--primary); white-space:nowrap;">₹{{ "{:,.2f}".format(totals['Total Amount']|default(0)) }}</td>
+                        {% for n in participants %}
+                        <td style="color:var(--success); white-space:nowrap;">₹{{ "{:,.2f}".format(totals[n]|default(0)) }}</td>
+                        {% endfor %}
+                        <td></td>
+                    </tr>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">🧾</div>
+                    <div class="empty-title">No expenses yet</div>
+                    <div class="empty-sub">Click <strong>Add Expense</strong> above to get started</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div><!-- /tab-overview -->
+
+    <!-- ================================================================
+         ANALYTICS TAB
+         ================================================================ -->
+    <div id="tab-analytics" class="tab-content" style="display:none;">
+        <div class="analytics-grid">
+
+            <!-- Spending by person -->
+            <div class="card analytics-card">
+                <div class="card-head">
+                    <div class="card-title">💸 Spending by Person</div>
+                    <div class="card-subtitle">Gross amount paid by each participant</div>
+                </div>
+                <div class="card-body">
+                    {% if participants %}
+                    <div class="chart-wrap"><canvas id="chart-person"></canvas></div>
+                    {% else %}
+                    <div class="empty-state" style="padding:30px;"><div class="empty-icon">💸</div><div class="empty-sub">No data yet</div></div>
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="card">
-                <h3 style="margin:0;">👨‍👩‍👧‍👦 Family Groups</h3>
-                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 15px;">Tracking proportional expenses for each family unit.</p>
+            <!-- Daily trend -->
+            <div class="card analytics-card">
+                <div class="card-head">
+                    <div class="card-title">📈 Daily Spending</div>
+                    <div class="card-subtitle">Total expenses per day over time</div>
+                </div>
+                <div class="card-body">
+                    {% if chart_daily_labels %}
+                    <div class="chart-wrap"><canvas id="chart-daily"></canvas></div>
+                    {% else %}
+                    <div class="empty-state" style="padding:30px;"><div class="empty-icon">📈</div><div class="empty-sub">No data yet</div></div>
+                    {% endif %}
+                </div>
+            </div>
 
-                {% if group_settlements %}
-                <div title="The suggested payments required to balance the accounts between different family units." 
-                    style="background: #fff7ed; padding: 12px; border-radius: 8px; border: 1px solid #ffedd5; margin-bottom: 15px; cursor: help;">
-                    <h4 style="margin: 0 0 5px 0; color: #9a3412; font-size: 0.9rem;">Inter-Group Settlements</h4>
-                    {% for gs in group_settlements %}
-                        <div style="font-size: 0.85rem; font-weight: bold; color: #c2410c;">• {{ gs }}</div>
+            <!-- Category breakdown -->
+            <div class="card analytics-card">
+                <div class="card-head">
+                    <div class="card-title">🏷 Category Breakdown</div>
+                    <div class="card-subtitle">Expenses split by category</div>
+                </div>
+                <div class="card-body" style="display:flex; justify-content:center;">
+                    {% if chart_cat_labels %}
+                    <div class="chart-wrap" style="max-width:280px; width:100%;"><canvas id="chart-cat"></canvas></div>
+                    {% else %}
+                    <div class="empty-state" style="padding:30px;">
+                        <div class="empty-icon">🏷</div>
+                        <div class="empty-title">No category data</div>
+                        <div class="empty-sub">Select a category when adding expenses</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Top 5 expenses -->
+            <div class="card analytics-card">
+                <div class="card-head">
+                    <div class="card-title">🏆 Top Expenses</div>
+                    <div class="card-subtitle">Highest single expenses recorded</div>
+                </div>
+                {% if top_expenses %}
+                {% for e in top_expenses %}
+                <div class="top-exp-row">
+                    <div class="top-exp-rank">{{ loop.index }}</div>
+                    <div class="top-exp-info">
+                        <div class="top-exp-desc">{{ e.Description }}</div>
+                        <div class="top-exp-meta">
+                            {{ e.Payer }} &middot; {{ e.Date }}
+                            {% if e.get('Category') and e.get('Category') not in ('nan', '') %}
+                            &middot; {{ e.Category }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="top-exp-amt">₹{{ "{:,.0f}".format(e['Total Amount']) }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state" style="padding:30px;">
+                    <div class="empty-icon">🏆</div>
+                    <div class="empty-sub">No expenses yet</div>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div><!-- /tab-analytics -->
+
+</div><!-- /page -->
+
+<!-- ===================================================================
+     ADD / EDIT EXPENSE MODAL
+     =================================================================== -->
+<div id="expense-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-box" id="modal-box">
+
+        <div class="modal-header">
+            <span class="modal-title-text" id="modal-title">➕ Add Expense</span>
+            <button class="btn-close-modal" onclick="closeModal()" title="Close">✕</button>
+        </div>
+
+        <div class="modal-edit-banner" id="modal-edit-banner">
+            ✏️ EDIT MODE — Modifying an existing expense
+        </div>
+
+        <div class="form-body">
+            <form action="/save" method="POST" id="exp-form" onsubmit="handleSubmit()">
+                <input type="hidden" name="id"    id="edit-id">
+                <input type="hidden" id="is-edit" value="0">
+
+                <div class="form-row">
+                    <input type="date"   name="date"   id="edit-date"   required>
+                    <input type="number" name="amount" id="edit-amount" placeholder="₹ Amount" step="0.01" required>
+                </div>
+
+                <input type="text" name="description" id="edit-desc" placeholder="What was this for?">
+
+                {% if used_descs %}
+                <div class="desc-suggestions" id="desc-suggestions">
+                    {% for d in used_descs %}
+                    <button type="button" class="desc-chip" data-desc="{{ d }}">{{ d }}</button>
                     {% endfor %}
                 </div>
                 {% endif %}
-                
-                <div class="group-container">
-                    {% for g_name, g_data in group_stats.items() %}
-                    <div class="group-card">
-                        <div class="group-header">
-                            <span style="font-weight: bold; color: var(--primary);">{{ g_name }}</span>
-                            <div style="display: flex; gap: 8px;">
-                                <button class="btn-act" 
-                                        style="background: var(--edit); padding: 4px 8px;" 
-                                        onclick="editGroup('{{ g_name }}', '{{ g_data.members | map(attribute='name') | join(',') }}')">
-                                    Edit
-                                </button>
-                                <a href="/delete_group/{{ g_name }}" class="btn-act" 
-                                style="background: var(--delete); padding: 4px 8px;" 
-                                onclick="return confirm('Delete this group?')">Delete</a>
-                            </div>
-                        </div>
-                        
-                        <div style="padding: 10px 12px; background: #f0fdf4; border-bottom: 1px solid #dcfce7;" title="Total actual cash paid by all members of this group combined.">
-                            <small style="color: #166534; font-weight: bold; text-transform: uppercase; font-size: 0.7rem;">Total Cash Paid by Group:</small>
-                            <div style="font-size: 1.1rem; font-weight: bold; color: #166534;">₹{{ "{:,.2f}".format(g_data.total_gross_paid) }}</div>
-                        </div>
 
-                        <div class="group-body">
-                            {% for m in g_data.members %}
-                            <div class="member-row" title="Member balance split across groups. Effective Gross is their cash contribution to this group.">
-                                <span>
-                                    {{ m.name }} 
-                                    {% if m.divisor > 1 %}<small style="color:#94a3b8;">(1/{{m.divisor}})</small>{% endif %}
-                                    <br><small style="color: #64748b; font-size: 0.7rem;">Paid: ₹{{ m.effective_gross }}</small>
-                                </span>
-                                <span style="font-weight: bold; color: {{ '#16a34a' if m.effective_bal >= 0 else '#dc2626' }}; align-self: center;">
-                                    ₹{{ m.effective_bal }}
-                                </span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        
-                        <div title="Group Net Balance (Total Paid - Total Group Share)" 
-                            style="padding: 10px; background: #fafafa; text-align: right; font-size: 0.8rem; border-top: 1px dashed #dbeafe; cursor: help;">
-                            Group Net: <b>₹{{ g_data.net_balance }}</b>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
+                <label class="form-label">Category</label>
+                <select name="category" id="edit-category">
+                    <option value="Miscellaneous">📦 Miscellaneous</option>
+                    <option value="Food & Dining">🍽 Food &amp; Dining</option>
+                    <option value="Transport">🚗 Transport</option>
+                    <option value="Accommodation">🏨 Accommodation</option>
+                    <option value="Activities">🎯 Activities</option>
+                    <option value="Shopping">🛍 Shopping</option>
+                    <option value="Medical">💊 Medical</option>
+                </select>
 
-                <details id="group-form-details" style="margin-top: 15px;">
-                    <summary style="cursor: pointer; color: var(--primary); font-weight: bold;">+ Create / Update Group</summary>
-                    <form action="/manage_groups" method="POST" style="margin-top: 10px; padding: 15px; background: #f8fafc; border-radius: 8px;">
-                        <input type="text" name="group_name" id="group_name_input" placeholder="Group Name" required>
-                        <p style="font-size: 0.8rem; margin-bottom: 5px;">Select/Deselect Members:</p>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                            {% for p in participants %}
-                            <label style="font-size: 0.85rem;"><input type="checkbox" name="group_members" value="{{ p }}"> {{ p }}</label>
-                            {% endfor %}
-                        </div>
-                        <button type="submit" class="btn-main" style="background: #334155;">Save Group Configuration</button>
-                    </form>
-                </details>
-            </div>
-        </div>
-
-        <div class="sidebar">
-            <div title="This is the total expenditure of all participants combined for this entire trip."
-            style="background: linear-gradient(135deg, #2563eb, #1e40af); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); cursor: help;">
-                <h4 style="margin: 0; font-size: 0.9rem; text-transform: uppercase; opacity: 0.9;">Total Trip Expenses</h4>
-                <h1 style="margin: 5px 0 0 0; font-size: 2.5rem;">₹{{ "{:,.2f}".format(totals['Total Amount']|default(0)) }}</h1>
-            </div>
-
-            <div class="card" title="Suggested payments to clear all debts. Positive balance members receive money; negative balance members pay back." style="border-left: 5px solid #2563eb; margin-bottom: 20px; cursor: help;">
-                <h3 style="margin-top: 0;">🤝 Settlements</h3>
-                {% for s in settlements %}
-                    <div style="padding: 10px; background: #f0f7ff; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; border: 1px solid #dbeafe;">
-                        <strong>{{ s.split(' pays ')[0] }}</strong> ➔ {{ s.split(' pays ')[1] }}
-                    </div>
-                {% else %}
-                    <p style="font-size: 0.9rem; color: #64748b;">No individual debts! 🎉</p>
-                {% endfor %}
-                <a href="{{ wa_url }}" target="_blank" style="background:#25d366; color:white; text-decoration:none; padding:12px; border-radius:8px; display:block; text-align:center; font-weight:bold; font-size:0.9rem; margin-top:10px;">WhatsApp Summary</a>
-            </div>
-
-            <div class="card"
-                title="Overall net position of each person (total paid minus total share). This is informational; actual payments are shown in the Settlements section.">
-
-                <h3 style="margin-top: 0;">📊 Active Spenders</h3>
-                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">
-                    Overall net position for the trip (not direct settlement).
-                </p>
-                
-                {% for name, bal in active_spenders.items() %}
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                    <span style="font-weight: 500;">{{ name }}</span>
-                    <span style="font-weight: bold; color: {{ '#16a34a' if bal >= 0 else '#dc2626' }}; font-size: 0.9rem;">
-                        {% if bal >= 0 %}
-                            Net Credit: ₹{{ "{:,.2f}".format(bal) }}
-                        {% else %}
-                            Net Debit: ₹{{ "{:,.2f}".format(bal|abs) }}
-                        {% endif %}
-                    </span>
-                </div>
-                {% endfor %}
-            </div>
-
-        </div>
-    </div>
-
-    <div class="card" style="margin-top:20px;">
-        <h3 style="margin: 0 0 15px 0;">Transaction Ledger</h3>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="col-sno">S.No</th>
-                        <th>Date</th>
-                        <th>Item</th>
-                        <th>Payer</th>
-                        <th>Total</th>
-                        {% for n in participants %}
-                            <th>{{ n }} ₹</th>
-                            <th>Eligible</th>
-                        {% endfor %}
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for e in expenses %}
-                    <tr>
-                        <td class="col-sno">{{ loop.index }}</td>
-                        <td>{{ e.Date }}</td>
-                        <td>{{ e.Description }}</td>
-                        <td>{{ e.Payer }}</td>
-                        <td>₹{{ "{:,.2f}".format(e['Total Amount']) }}</td>
-                        
-                        {% for n in participants %}
-                            <td>₹{{ "{:,.2f}".format(e[n]) }}</td>
-                            <td>
-                                <span class="{{ 'badge-yes' if e[n+'_Eligible'] == 'Yes' else 'badge-no' }}">
-                                    {{ e[n+'_Eligible'] }}
-                                </span>
-                            </td>
-                        {% endfor %}
-                        
-                        <td>
-                            <div style="display:flex; gap:5px;">
-                                <button class="btn-act" style="background: var(--edit);" 
-                                    onclick="editExpense(
-                                        '{{ e.id }}',
-                                        '{{ e.Date }}',
-                                        '{{ e.Description }}',
-                                        '{{ e.Payer }}',
-                                        '{{ e['Total Amount'] }}',
-                                        '{% set eligible = [] %}{% for n in participants %}{% if e[n+'_Eligible'] == 'Yes' %}{% set _ = eligible.append(n) %}{% endif %}{% endfor %}{{ eligible|join(',') }}'
-                                    )">
-                                    Edit
-                                </button>
-                                <a href="/delete_exp/{{ e.id }}" class="btn-act" style="background: var(--delete);" 
-                                onclick="return confirm('Delete?')">Del</a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tr style="background:#f1f5f9; font-weight:bold; position: sticky; bottom: 0; z-index: 5;">
-                    <td colspan="4" style="text-align:right;">TOTALS:</td>
-                    <td>₹{{ "{:,.2f}".format(totals['Total Amount']|default(0)) }}</td>
+                <label class="form-label">Paid by</label>
+                <select name="payer" id="edit-payer">
                     {% for n in participants %}
-                        <td>₹{{ "{:,.2f}".format(totals[n]|default(0)) }}</td>
-                        <td>-</td>
+                    <option value="{{ n }}">{{ n }} (Paid)</option>
                     {% endfor %}
-                    <td></td>
-                </tr>
-            </table>
+                </select>
+
+                <div class="split-section-label">Split Between</div>
+                <div class="split-toggles">
+                    <button type="button" class="btn-toggle" onclick="toggleAll(true)">Select All</button>
+                    <button type="button" class="btn-toggle" onclick="toggleAll(false)">Deselect All</button>
+                </div>
+                <div class="split-grid">
+                    {% for n in participants %}
+                    <label class="split-label">
+                        <input type="checkbox" name="split_between" value="{{ n }}" checked> {{ n }}
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn-save" id="sub-btn">Save Expense</button>
+            </form>
         </div>
+
     </div>
 </div>
 
 <script>
-    function editExpense(id, date, desc, payer, amt, eligibleString) {
-        // 1. Basic Fields
-        document.getElementById('edit-id').value = id;
-        document.getElementById('edit-date').value = date;
-        document.getElementById('edit-desc').value = desc;
-        document.getElementById('edit-amount').value = amt;
+    // ================================================================
+    // TABS
+    // ================================================================
+    let chartsReady = false;
 
-        // 2. Set the Payer Dropdown
-        const payerSelect = document.querySelector('select[name="payer"]');
-        if (payerSelect) {
-            payerSelect.value = payer;
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + tabId).style.display = 'block';
+        document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+
+        if (tabId === 'analytics' && !chartsReady) {
+            initCharts();
+            chartsReady = true;
         }
-
-        // 3. Handle Split Checkboxes
-        const eligibleArray = eligibleString.split(',');
-        const splitChecks = document.querySelectorAll('input[name="split_between"]');
-        
-        splitChecks.forEach(checkbox => {
-            // If the person was in the original split, check them; otherwise uncheck
-            if (eligibleArray.includes(checkbox.value)) {
-                checkbox.checked = true;
-            } else {
-                checkbox.checked = false;
-            }
-        });
-
-        // 4. UI Feedback
-        const area = document.getElementById('input-area');
-        area.classList.add('editing-mode');
-        document.getElementById('form-title').innerText = "📝 EDIT MODE";
-        
-        // Scroll smoothly to the form
-        area.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    function editGroup(name, membersString) {
-        // 1. Set the Group Name input
-        document.getElementById('group_name_input').value = name;
-        
-        // 2. Open the details panel
-        document.getElementById('group-form-details').open = true;
-        document.getElementById('group_name_input').focus();
-        
-        // 3. Convert the comma-separated string back into an array
-        const currentMembers = membersString.split(',');
-        
-        // 4. Update the checkboxes
-        const checks = document.querySelectorAll('input[name="group_members"]');
-        checks.forEach(checkbox => {
-            // If the checkbox value (member name) is in the currentMembers array, check it
-            if (currentMembers.includes(checkbox.value)) {
-                checkbox.checked = true;
-            } else {
-                checkbox.checked = false;
-            }
+    // ================================================================
+    // ANALYTICS CHARTS
+    // ================================================================
+    const CHART_COLORS = ['#4f46e5','#0891b2','#059669','#d97706','#7c3aed','#0284c7','#b45309','#be185d','#dc2626','#0d9488'];
+
+    function initCharts() {
+        const personLabels = {{ chart_person_labels | tojson }};
+        const personValues = {{ chart_person_values | tojson }};
+        const dailyLabels  = {{ chart_daily_labels  | tojson }};
+        const dailyValues  = {{ chart_daily_values  | tojson }};
+        const catLabels    = {{ chart_cat_labels    | tojson }};
+        const catValues    = {{ chart_cat_values    | tojson }};
+
+        // Spending per person — horizontal bar
+        const elPerson = document.getElementById('chart-person');
+        if (elPerson && personLabels.length) {
+            new Chart(elPerson, {
+                type: 'bar',
+                data: {
+                    labels: personLabels,
+                    datasets: [{ label: 'Paid (₹)', data: personValues,
+                        backgroundColor: CHART_COLORS.slice(0, personLabels.length), borderRadius: 6 }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') }, grid: { color: '#f1f5f9' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Daily spending — line chart
+        const elDaily = document.getElementById('chart-daily');
+        if (elDaily && dailyLabels.length) {
+            new Chart(elDaily, {
+                type: 'line',
+                data: {
+                    labels: dailyLabels,
+                    datasets: [{ label: 'Daily (₹)', data: dailyValues,
+                        borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)',
+                        fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#2563eb' }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') }, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Category — doughnut
+        const elCat = document.getElementById('chart-cat');
+        if (elCat && catLabels.length) {
+            new Chart(elCat, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{ data: catValues, backgroundColor: CHART_COLORS, borderWidth: 2, borderColor: '#fff' }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } },
+                        tooltip: { callbacks: { label: ctx => ` ₹${Number(ctx.raw).toLocaleString('en-IN')}` } }
+                    }
+                }
+            });
+        }
+    }
+
+    // ================================================================
+    // MODAL
+    // ================================================================
+    function openModal() {
+        document.getElementById('edit-id').value     = '';
+        document.getElementById('edit-amount').value  = '';
+        document.getElementById('edit-desc').value    = '';
+        document.getElementById('is-edit').value      = '0';
+        document.getElementById('modal-title').textContent = '➕ Add Expense';
+        document.getElementById('modal-edit-banner').classList.remove('active');
+        document.getElementById('sub-btn').disabled   = false;
+        document.getElementById('sub-btn').textContent = 'Save Expense';
+
+        const payerEl = document.getElementById('edit-payer');
+        if (payerEl) payerEl.selectedIndex = 0;
+        const catEl = document.getElementById('edit-category');
+        if (catEl) catEl.value = 'Miscellaneous';
+
+        document.querySelectorAll('input[name="split_between"]').forEach(cb => cb.checked = true);
+        setTodayDate();
+
+        document.getElementById('expense-modal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('edit-amount').focus(), 50);
+    }
+
+    function closeModal() {
+        document.getElementById('expense-modal').classList.remove('open');
+        document.body.style.overflow = '';
+        sessionStorage.removeItem('modalOpen');
+    }
+
+    function handleSubmit() {
+        const isEdit = document.getElementById('is-edit').value === '1';
+        if (!isEdit) sessionStorage.setItem('modalOpen', '1');
+        const btn = document.getElementById('sub-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+    }
+
+    window.addEventListener('DOMContentLoaded', function () {
+        setTodayDate();
+        if (sessionStorage.getItem('modalOpen') === '1') openModal();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    // ================================================================
+    // FORM HELPERS
+    // ================================================================
+    function setTodayDate() {
+        const d = document.getElementById('edit-date');
+        if (d) {
+            const now  = new Date();
+            const yyyy = now.getFullYear();
+            const mm   = String(now.getMonth() + 1).padStart(2, '0');
+            const dd   = String(now.getDate()).padStart(2, '0');
+            d.value = `${yyyy}-${mm}-${dd}`;
+        }
+    }
+
+    function toggleAll(checked) {
+        document.querySelectorAll('input[name="split_between"]').forEach(cb => cb.checked = checked);
+    }
+
+    // ================================================================
+    // EDIT EXPENSE
+    // ================================================================
+    function editExpense(id, date, desc, category, payer, amt, eligibleString) {
+        document.getElementById('edit-id').value      = id;
+        document.getElementById('edit-date').value    = date;
+        document.getElementById('edit-desc').value    = desc;
+        document.getElementById('edit-amount').value  = amt;
+        document.getElementById('is-edit').value      = '1';
+
+        const catEl = document.getElementById('edit-category');
+        if (catEl) catEl.value = category || 'Miscellaneous';
+
+        const payerEl = document.getElementById('edit-payer');
+        if (payerEl) payerEl.value = payer;
+
+        const eligible = eligibleString ? eligibleString.split(',') : [];
+        document.querySelectorAll('input[name="split_between"]').forEach(cb => {
+            cb.checked = eligible.includes(cb.value);
         });
 
-        // 5. Scroll to the form for better user experience
-        document.getElementById('group-form-details').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('modal-title').textContent = '✏️ Edit Expense';
+        document.getElementById('modal-edit-banner').classList.add('active');
+        document.getElementById('sub-btn').disabled    = false;
+        document.getElementById('sub-btn').textContent = 'Update Expense';
+
+        document.getElementById('expense-modal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // ================================================================
+    // BUDGET
+    // ================================================================
+    function toggleBudgetForm(show) {
+        document.getElementById('budget-form-wrap').style.display = show ? 'block' : 'none';
+        if (show) document.getElementById('budget-input').focus();
+    }
+
+    function removeBudget() {
+        if (!confirm('Remove the budget for this ledger?')) return;
+        const f   = document.createElement('form');
+        f.method  = 'POST'; f.action = '/set_budget';
+        const inp = document.createElement('input');
+        inp.type  = 'hidden'; inp.name = 'budget'; inp.value = '';
+        f.appendChild(inp); document.body.appendChild(f); f.submit();
+    }
+
+    // ================================================================
+    // DESCRIPTION SUGGESTION CHIPS
+    // ================================================================
+    document.querySelectorAll('.desc-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            document.getElementById('edit-desc').value = this.dataset.desc;
+            document.getElementById('edit-desc').focus();
+        });
+    });
+
+    // ================================================================
+    // COLLAPSIBLE CARDS
+    // ================================================================
+    function toggleCard(id) {
+        const body    = document.getElementById('body-' + id);
+        const chevron = document.getElementById('chevron-' + id);
+        body.classList.toggle('is-collapsed');
+        chevron.classList.toggle('is-collapsed');
+    }
+
+    // ================================================================
+    // LEDGER SEARCH FILTER
+    // ================================================================
+    function filterLedger(query) {
+        const q = query.toLowerCase().trim();
+        const tbody = document.querySelector('#ledger-table tbody');
+        if (!tbody) return;
+        tbody.querySelectorAll('tr').forEach(tr => {
+            tr.style.display = (!q || tr.textContent.toLowerCase().includes(q)) ? '' : 'none';
+        });
+    }
+
+    // ================================================================
+    // GROUP FORM
+    // ================================================================
+    function editGroup(name, membersString) {
+        document.getElementById('group_name_input').value = name;
+        const panel = document.getElementById('group-form-panel');
+        panel.classList.add('open');
+        const members = membersString ? membersString.split(',') : [];
+        document.querySelectorAll('input[name="group_members"]').forEach(cb => {
+            cb.checked = members.includes(cb.value);
+        });
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function toggleGroupForm() {
+        document.getElementById('group-form-panel').classList.toggle('open');
     }
 </script>
 </body>
